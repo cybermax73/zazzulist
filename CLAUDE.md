@@ -47,6 +47,8 @@ Vérifier : `curl -s https://cybermax73.github.io/zazzulist/data/manifest.json`.
 3. Capture d'écran : `msedge --headless=new --screenshot=<chemin> --window-size=1400,700 http://127.0.0.1:8080/`.
 
 ## Pièges connus
+- Une exception dans un gestionnaire (ex. fonction inexistante) rend un bouton muet sans rien afficher : dans les tests
+  CDP, poser `window.addEventListener('error', …)` avant de cliquer et vérifier qu'aucune erreur n'est levée.
 - Cloudflare bloque les clients non-navigateur sans User-Agent réaliste (403) : tester le worker avec `curl` (ok) ou
   un UA navigateur, pas avec `urllib` nu.
 - Ne jamais pousser vers le cloud une liste de plateformes vide par-dessus une liste existante (cf. `mergeRemote`).

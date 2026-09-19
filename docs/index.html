@@ -487,6 +487,14 @@ Pour retrouver ma liste sur un autre appareil : ${location.origin}${location.pat
   const ratingClass = (r) => r >= 7.5 ? 'r-hi' : r >= 6.5 ? 'r-mid' : 'r-low';
   const rand = (id) => { let x = (id * 2654435761 + seed) >>> 0; x ^= x << 13; x ^= x >>> 17; x ^= x << 5; return (x >>> 0) / 4294967296; };
   const voteOf = (id) => (user.ratings[id] || {}).vote || null;
+  const ago = (iso) => {
+    const s = (Date.now() - new Date(iso)) / 1000;
+    if (s < 10) return 'à l’instant';
+    if (s < 60) return `il y a ${Math.round(s)} s`;
+    if (s < 3600) return `il y a ${Math.round(s / 60)} min`;
+    if (s < 86400) return `il y a ${Math.round(s / 3600)} h`;
+    return `il y a ${Math.round(s / 86400)} j`;
+  };
   const daysSince = (iso) => iso ? Math.round((Date.now() - new Date(iso)) / 86400000) : null;
   const fmtDate = (iso) => new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
   const providerOf = (id) => ((state.manifest || {}).providers || []).find(p => p.id === id) || {};
