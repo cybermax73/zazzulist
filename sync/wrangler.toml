@@ -1,0 +1,9 @@
+name = "zazzulist-sync"
+main = "worker.js"
+compatibility_date = "2026-09-01"
+
+# La base D1 est créée par `wrangler d1 create zazzulist` ; l'id est renseigné ensuite.
+[[d1_databases]]
+binding = "DB"
+database_name = "zazzulist"
+database_id = "d82b7a3f-b239-4ad0-a2a4-2a8d7fc43ca5"

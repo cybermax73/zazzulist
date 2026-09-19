@@ -120,6 +120,16 @@
   .votes button.watch { font-size: 12.5px; font-weight: 650; padding: 3px 9px; }
   .votes button.watch.on { background: var(--text); border-color: var(--text); color: var(--bg); }
   .backup { font-size: 12px; color: var(--muted); margin-top: 8px; }
+  .sync { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 12px; font-size: 12.5px; color: var(--muted); }
+  .sync .code { font: 600 15px/1.2 ui-monospace, Consolas, monospace; color: var(--text); letter-spacing: .04em;
+                background: var(--chip); padding: 4px 8px; border-radius: 6px; user-select: all; }
+  .sync .actions { justify-content: flex-start; margin-top: 8px; }
+  .sync .st { display: block; margin-top: 6px; }
+  .sync .st.err { color: var(--accent); }
+  .inapp { background: var(--accent); color: #fff; padding: 10px 14px; font-size: 13.5px; display: flex; gap: 10px;
+           align-items: center; justify-content: space-between; }
+  .inapp a { color: #fff; font-weight: 700; white-space: nowrap; }
+  .inapp button { background: none; border: 0; color: #fff; font-size: 18px; cursor: pointer; }
   .backup b { color: var(--accent); }
   #settings.dot { position: relative; }
   #settings.dot::after { content: ""; position: absolute; top: 4px; right: 4px; width: 8px; height: 8px; border-radius: 50%;
@@ -204,6 +214,10 @@
 </style>
 </head>
 <body>
+<div class="inapp" id="inapp" hidden>
+  <span>Pour garder ta liste et tes votes, ouvre ZazzuList dans ton navigateur.</span>
+  <a id="inappLink" href="#">Ouvrir ↗</a><button id="inappClose" aria-label="Fermer">✕</button>
+</div>
 <header>
   <div class="bar">
     <h1><svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M8 9h16l-9.5 11H24v3H8l9.5-11H8z" fill="#fff"/><path d="M22 6l1.2 2.6L26 9.8l-2.8 1.2L22 13.6l-1.2-2.6L18 9.8l2.8-1.2z" fill="#fff" opacity=".9"/></svg><span class="brand">Zazzu<b>List</b></span></h1>
@@ -270,6 +284,15 @@
         <button class="btn" id="wipeBtn" title="Efface votes, vus et réglages de ce navigateur">Tout effacer</button>
       </div>
       <div class="backup" id="backupInfo"></div>
+      <div class="sync" id="syncBox">
+        <b>Sauvegarde automatique.</b> Tout est copié en ligne sous ton code secret — pour retrouver tes données sur un autre
+        appareil ou après un nettoyage du navigateur, il suffit de le saisir ici. Garde-le quelque part :
+        <div class="actions"><span class="code" id="syncCode">…</span>
+          <button class="btn" id="copyCode">Copier</button>
+          <a class="btn" id="mailCode" href="#">M'envoyer mon code</a>
+          <button class="btn" id="useCode">J'ai déjà un code</button></div>
+        <span class="st" id="syncStatus"></span>
+      </div>
     </div>
   </div>
 </div>
@@ -314,14 +337,131 @@
 
   // ---- données utilisateur (navigateur uniquement)
   const USER_KEY = 'zazzulist_user_v1';
-  const user = { platforms: [], hidden: {}, ratings: {}, watch: {}, changes: 0, lastExport: null };
+  const user = { platforms: [], platformsAt: null, hidden: {}, ratings: {}, watch: {}, stamps: {}, tomb: {},
+                 code: null, changes: 0, lastExport: null };
   try { Object.assign(user, JSON.parse(localStorage.getItem(USER_KEY) || '{}')); } catch {}
   let persistAsked = false;
   const saveUser = () => {
     try { localStorage.setItem(USER_KEY, JSON.stringify(user)); } catch {}
     // demande au navigateur de ne jamais purger ce stockage pour faire de la place (Chrome/Firefox/Edge)
     if (!persistAsked && navigator.storage && navigator.storage.persist) { persistAsked = true; navigator.storage.persist().catch(() => {}); }
+    schedulePush();
   };
+
+  // ---- synchronisation cloud (Cloudflare Worker, voir sync/). Code secret = identité, pas de compte.
+  const SYNC_URL = 'https://zazzulist-sync.zazzulist.workers.dev';
+  const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const CODE_RE = /^ZL-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/;
+  const newCode = () => { const a = new Uint8Array(8); crypto.getRandomValues(a); const t = [...a].map(b => CODE_CHARS[b % 32]).join(''); return `ZL-${t.slice(0, 4)}-${t.slice(4)}`; };
+  const normCode = (c) => String(c || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/^ZL/, '').replace(/^(.{4})(.{4})$/, 'ZL-$1-$2');
+  const COLLS = ['ratings', 'watch', 'hidden'];
+  const stampOf = (u, coll, id) => (u.stamps || {})[coll + ':' + id] || ((u[coll] || {})[id] || {}).at || '';
+  const tombOf = (u, coll, id) => (u.tomb || {})[coll + ':' + id] || '';
+  // Fusion : pour chaque entrée, l'événement le plus récent gagne (présence datée vs suppression datée).
+  function mergeRemote(r) {
+    if (!r || typeof r !== 'object') return false;
+    let changed = false;
+    r.stamps = r.stamps || {}; r.tomb = r.tomb || {};
+    COLLS.forEach(coll => {
+      const ids = new Set([...Object.keys(user[coll] || {}), ...Object.keys(r[coll] || {}),
+        ...Object.keys(r.tomb).filter(k => k.startsWith(coll + ':')).map(k => k.slice(coll.length + 1))]);
+      ids.forEach(id => {
+        const lPresent = id in (user[coll] || {}), rPresent = id in (r[coll] || {});
+        const lt = lPresent ? stampOf(user, coll, id) : tombOf(user, coll, id);
+        const rt = rPresent ? stampOf(r, coll, id) : tombOf(r, coll, id);
+        if (rt > lt) {
+          changed = true;
+          if (rPresent) { user[coll][id] = r[coll][id]; user.stamps[coll + ':' + id] = rt; delete user.tomb[coll + ':' + id]; }
+          else { delete user[coll][id]; user.tomb[coll + ':' + id] = rt; delete user.stamps[coll + ':' + id]; }
+        }
+      });
+    });
+    if (Array.isArray(r.platforms) && r.platforms.length && (!user.platforms.length || (r.platformsAt || '') > (user.platformsAt || ''))) {
+      user.platforms = r.platforms; user.platformsAt = r.platformsAt; changed = true;
+    }
+    return changed;
+  }
+  const cloudPayload = () => ({ platforms: user.platforms, platformsAt: user.platformsAt, ratings: user.ratings, watch: user.watch,
+                                hidden: user.hidden, stamps: user.stamps, tomb: user.tomb, v: 1 });
+  let pushTimer = null, dirty = false, lastSync = null, syncErr = null, pushing = false;
+  function schedulePush() {
+    if (!user.code || SYNC_URL.startsWith('__')) return;
+    dirty = true; clearTimeout(pushTimer); pushTimer = setTimeout(cloudPush, 2500); renderSyncStatus();
+  }
+  async function cloudPush() {
+    if (!dirty || !user.code || pushing) return;
+    pushing = true;
+    try {
+      const r = await fetch(`${SYNC_URL}/v1/sync/${user.code}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify(cloudPayload()) });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      dirty = false; lastSync = Date.now(); syncErr = null;
+    } catch (e) { syncErr = e.message; }
+    pushing = false; renderSyncStatus();
+  }
+  async function cloudPull(code) {
+    const r = await fetch(`${SYNC_URL}/v1/sync/${code}`, { cache: 'no-store' });
+    if (r.status === 404) return null;
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return (await r.json()).data;
+  }
+  async function syncStart() {
+    if (SYNC_URL.startsWith('__')) return;
+    // code reçu par le lien (passerelle depuis un navigateur intégré, ou partage entre appareils)
+    const m = location.hash.match(/code=(ZL-?[A-Z0-9-]+)/i);
+    if (m) { const c = normCode(m[1]); if (CODE_RE.test(c)) user.code = c; history.replaceState(null, '', location.pathname + location.search); }
+    if (!user.code) { user.code = newCode(); try { localStorage.setItem(USER_KEY, JSON.stringify(user)); } catch {} }
+    renderSyncStatus();
+    try {
+      const remote = await cloudPull(user.code);
+      if (remote) {
+        const before = JSON.stringify(user.platforms);
+        if (mergeRemote(remote)) {
+          try { localStorage.setItem(USER_KEY, JSON.stringify(user)); } catch {}
+          if (JSON.stringify(user.platforms) !== before || !state.films.length) { $('overlay').hidden = true; load(); }
+          else { buildReco(); renderFilterUI(); render(); }
+        }
+      }
+      lastSync = Date.now(); syncErr = null;
+      if (!remote || dirty) { dirty = true; cloudPush(); }
+    } catch (e) { syncErr = e.message; }
+    renderSyncStatus();
+  }
+  function renderSyncStatus() {
+    $('syncCode').textContent = user.code || '…';
+    $('mailCode').href = 'mailto:?subject=' + encodeURIComponent('Mon code ZazzuList') + '&body=' +
+      encodeURIComponent(`Mon code de sauvegarde ZazzuList : ${user.code}
+
+Pour retrouver ma liste sur un autre appareil : ${location.origin}${location.pathname}#code=${user.code}`);
+    const st = $('syncStatus');
+    if (SYNC_URL.startsWith('__')) { st.textContent = 'Synchronisation non configurée.'; return; }
+    st.classList.toggle('err', !!syncErr);
+    st.textContent = syncErr ? `Hors ligne — dernière sauvegarde ${lastSync ? ago(new Date(lastSync).toISOString()) : 'inconnue'} (${syncErr})`
+      : dirty ? 'Sauvegarde en cours…' : lastSync ? `Sauvegardé en ligne ${ago(new Date(lastSync).toISOString())}.` : '';
+    const inapp = /FBAN|FBAV|FB_IAB|Instagram|Messenger|Line\/|MicroMessenger|Snapchat|Twitter|TikTok/i.test(navigator.userAgent);
+    if (inapp && user.code && !sessionStorage.getItem('inappClosed')) {
+      const target = `${location.origin}${location.pathname}#code=${user.code}`;
+      $('inappLink').href = /Android/i.test(navigator.userAgent)
+        ? `intent://${location.host}${location.pathname}#code=${user.code}#Intent;scheme=https;action=android.intent.action.VIEW;end`
+        : target;
+      $('inapp').hidden = false;
+    }
+  }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && dirty) { clearTimeout(pushTimer); cloudPush(); } });
+  $('copyCode').addEventListener('click', async () => { try { await navigator.clipboard.writeText(user.code); $('copyCode').textContent = 'Copié ✓'; setTimeout(() => $('copyCode').textContent = 'Copier', 1500); } catch { prompt('Ton code :', user.code); } });
+  $('useCode').addEventListener('click', async () => {
+    const c = normCode(prompt('Saisis ton code ZazzuList (ZL-XXXX-XXXX) :', ''));
+    if (!CODE_RE.test(c)) { if (c) alert('Code invalide.'); return; }
+    try {
+      const remote = await cloudPull(c);
+      if (!remote) { alert('Aucune sauvegarde trouvée pour ce code.'); return; }
+      user.code = c; mergeRemote(remote); dirty = true;
+      try { localStorage.setItem(USER_KEY, JSON.stringify(user)); } catch {}
+      buildReco(); renderFilterUI(); render(); renderSyncStatus(); cloudPush();
+      alert(`Données récupérées : ${Object.keys(user.watch).length} à voir, ${Object.keys(user.ratings).length} votes.`);
+    } catch (e) { alert('Impossible de joindre la sauvegarde (' + e.message + ').'); }
+  });
+  $('inappClose').addEventListener('click', () => { $('inapp').hidden = true; try { sessionStorage.setItem('inappClosed', '1'); } catch {} });
 
   let universe = 'films';
   try { universe = UNIVERSES[localStorage.getItem('universe')] ? localStorage.getItem('universe') : 'films'; } catch {}
@@ -576,21 +716,24 @@
     return entry;
   };
   const touched = () => { user.changes = (user.changes || 0) + 1; saveUser(); updateBackupHint(); };
+  const stamp = (coll, id) => { user.stamps[coll + ':' + id] = new Date().toISOString(); delete user.tomb[coll + ':' + id]; };
+  const bury = (coll, id) => { user.tomb[coll + ':' + id] = new Date().toISOString(); delete user.stamps[coll + ':' + id]; };
   function rate(id, vote) {
     if (vote) {
-      user.ratings[id] = { ...(user.ratings[id] || {}), ...snapshotOf(id), vote, universe, at: new Date().toISOString() };
-      user.hidden[id] = 'seen'; // un titre noté est un titre vu…
-      delete user.watch[id];    // …donc il sort de la liste à voir
-    } else delete user.ratings[id];
+      user.ratings[id] = { ...(user.ratings[id] || {}), ...snapshotOf(id), vote, universe, at: new Date().toISOString() }; stamp('ratings', id);
+      user.hidden[id] = 'seen'; stamp('hidden', id); // un titre noté est un titre vu…
+      if (user.watch[id]) { delete user.watch[id]; bury('watch', id); } // …donc il sort de la liste à voir
+    } else { delete user.ratings[id]; bury('ratings', id); }
     touched(); buildReco(); render();
   }
   function hide(id, st) {
-    if (st) { user.hidden[id] = st; delete user.watch[id]; } else delete user.hidden[id];
+    if (st) { user.hidden[id] = st; stamp('hidden', id); if (user.watch[id]) { delete user.watch[id]; bury('watch', id); } }
+    else { delete user.hidden[id]; bury('hidden', id); }
     touched(); render();
   }
   function toggleWatch(id) {
-    if (user.watch[id]) delete user.watch[id];
-    else user.watch[id] = { ...snapshotOf(id), universe, at: new Date().toISOString() };
+    if (user.watch[id]) { delete user.watch[id]; bury('watch', id); }
+    else { user.watch[id] = { ...snapshotOf(id), universe, at: new Date().toISOString() }; stamp('watch', id); }
     touched(); render();
   }
   // rappel de sauvegarde : beaucoup de modifications sans export récent → point rouge sur ⚙ + texte dans la fenêtre
@@ -609,14 +752,14 @@
     plist.innerHTML = ((state.manifest || {}).providers || []).map(p =>
       `<label title="${esc(p.name)}"><input type="checkbox" value="${p.id}" ${user.platforms.includes(p.id) ? 'checked' : ''} aria-label="${esc(p.name)}"> ${p.logo ? `<span class="lg"><img src="img/${p.logo}" alt="${esc(p.name)}"></span>` : esc(p.name)}</label>`).join('');
     $('saveSettings').textContent = first ? 'C\'est parti' : 'Enregistrer';
-    $('dataTools').hidden = !!first; updateBackupHint();
+    $('dataTools').hidden = !!first; updateBackupHint(); renderSyncStatus();
     $('overlay').hidden = false;
   }
   $('settings').addEventListener('click', () => openSettings(false));
   $('saveSettings').addEventListener('click', () => {
     const chosen = [...$('plist').querySelectorAll('input:checked')].map(i => +i.value);
     if (!chosen.length) { alert('Choisis au moins une plateforme.'); return; }
-    user.platforms = chosen; saveUser();
+    user.platforms = chosen; user.platformsAt = new Date().toISOString(); saveUser();
     $('overlay').hidden = true; load();
   });
   $('overlay').addEventListener('click', e => { if (e.target === $('overlay') && user.platforms.length) $('overlay').hidden = true; });
@@ -632,14 +775,16 @@
       const d = JSON.parse(await file.text());
       if (!d || typeof d !== 'object' || (!d.ratings && !d.hidden && !d.watch)) throw new Error('format inattendu');
       Object.assign(user.ratings, d.ratings || {}); Object.assign(user.hidden, d.hidden || {}); Object.assign(user.watch, d.watch || {});
-      if (Array.isArray(d.platforms) && d.platforms.length) user.platforms = d.platforms;
+      const now = new Date().toISOString();
+      COLLS.forEach(coll => Object.keys(d[coll] || {}).forEach(id => { user.stamps[coll + ':' + id] = now; delete user.tomb[coll + ':' + id]; }));
+      if (Array.isArray(d.platforms) && d.platforms.length) { user.platforms = d.platforms; user.platformsAt = now; }
       saveUser(); $('overlay').hidden = true; load();
       alert(`Import réussi : ${Object.keys(d.watch || {}).length} à voir, ${Object.keys(d.ratings || {}).length} votes, ${Object.keys(d.hidden || {}).length} titres vus/passés.`);
     } catch (err) { alert('Fichier illisible : ' + err.message); }
     e.target.value = '';
   });
   $('wipeBtn').addEventListener('click', () => {
-    if (!confirm('Effacer ta liste à voir, tes votes, titres vus et réglages de ce navigateur ? (pense à exporter avant)')) return;
+    if (!confirm(`Effacer ta liste à voir, tes votes, titres vus et réglages de ce navigateur ?\nLa sauvegarde en ligne sous le code ${user.code} est conservée : tu pourras la récupérer avec « J'ai déjà un code ».`)) return;
     try { Object.keys(localStorage).filter(k => k.startsWith('zazzulist') || k === 'universe').forEach(k => localStorage.removeItem(k)); } catch {}
     location.reload();
   });
@@ -724,7 +869,7 @@
   (async () => {
     try { state.manifest = await (await fetch(DATA + 'manifest.json', { cache: 'no-cache' })).json(); }
     catch { setStatus('Catalogue indisponible', true); return; }
-    renderFilterUI(); updateBackupHint(); load();
+    renderFilterUI(); updateBackupHint(); load(); syncStart();
   })();
 })();
 </script>

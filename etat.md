@@ -26,6 +26,12 @@
   agrandi + boutons − / + ; fenêtre plateformes = logos seuls.
 - **Liste à voir** : bouton « + À voir » sur chaque carte (à côté de 👍/👎), vue « 🔖 Ma liste à voir » ; un titre noté
   ou marqué vu/passé sort automatiquement de la liste. Stockée dans `user.watch` (localStorage) avec instantané du titre.
+- **Sauvegarde cloud automatique (19/09 soir)** : Worker Cloudflare + base D1 (`sync/`, compte Cloudflare de Max,
+  gratuit) à `https://zazzulist-sync.zazzulist.workers.dev`. Chaque navigateur génère un code secret `ZL-XXXX-XXXX`
+  (affiché dans ⚙ : copier / m'envoyer par mail / « j'ai déjà un code ») ; les données sont poussées 2,5 s après chaque
+  changement et fusionnées au chargement (horodatage par entrée + tombstones : l'événement le plus récent gagne).
+  Lien `…/#code=ZL-…` = récupération sans saisie (utilisé par le bandeau « Ouvrir dans ton navigateur » affiché dans
+  les navigateurs intégrés Messenger/Instagram…). Sans réseau, tout continue en local.
 - Protection des données : `navigator.storage.persist()` demandé au premier enregistrement ; compteur de modifications
   depuis le dernier export (point rouge sur ⚙ à partir de 15, texte dans la fenêtre ⚙).
 - ⚙ : choix des plateformes (première visite = fenêtre obligatoire), export / import JSON, tout effacer.

@@ -24,6 +24,10 @@
 
 - Liste « à voir » ajoutée (bouton + vue), rappel d'export, demande de stockage persistant.
 
+- Sauvegarde cloud par code secret (Cloudflare Worker + D1, gratuit) : décision Max après analyse des cas de perte
+  (effacement navigateur, navigation privée, navigateur intégré, purge Safari 7 j, changement d'appareil). Node.js +
+  wrangler installés sur le poste.
+
 ## Backlog d'idées (brainstorm du 19/09, non priorisé, rien d'engagé)
 - Pioche : 3 titres au hasard dans la sélection, plein écran, « re-tirer ».
 - Départs imminents (« quitte Netflix le 30/09 ») — dépend de `vodPlatforms.modalities.dateEnd`, à vérifier.

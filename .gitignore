@@ -5,3 +5,5 @@ docs/data/*.tmp
 max-zazzulist.json
 *-zazzulist.json
 tools/.edgeprofile/
+sync/node_modules/
+sync/.wrangler/

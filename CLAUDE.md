@@ -14,6 +14,8 @@ Propriétaire : Max (GitHub `cybermax73`). Public cible : Max + amis, partage pa
   `docs/data/manifest.json` — plateformes (id, nom, logo), date, compteurs. `docs/img/` — logos plateformes.
 - `scripts/fetch_catalog.py` — génère `docs/data/` depuis l'API SensCritique (stdlib only, ~8 min pour tout).
 - `.github/workflows/refresh.yml` — lance le script chaque nuit (04:15 UTC) et commite si changement.
+- `sync/` — service de synchronisation (Cloudflare Worker `worker.js` + D1 `schema.sql`, `wrangler.toml`). Déployer :
+  `cd sync && npx wrangler deploy` (Node.js installé, wrangler connecté au compte Cloudflare de Max). URL dans `SYNC_URL`.
 - `tools/cdp_test.py` — pilote Edge headless (DevTools) pour tester la page sans navigateur visible. Voir « Tester ».
 - `max-zazzulist.json` — export perso de Max (votes). **Gitignoré, ne jamais le publier.**
 - Anciennes versions locales (serveur Python, hors dépôt) : `..\sc-streaming` (v1) et `..\zazzulist` (v2). Ne pas y toucher,
@@ -45,6 +47,9 @@ Vérifier : `curl -s https://cybermax73.github.io/zazzulist/data/manifest.json`.
 3. Capture d'écran : `msedge --headless=new --screenshot=<chemin> --window-size=1400,700 http://127.0.0.1:8080/`.
 
 ## Pièges connus
+- Cloudflare bloque les clients non-navigateur sans User-Agent réaliste (403) : tester le worker avec `curl` (ok) ou
+  un UA navigateur, pas avec `urllib` nu.
+- Ne jamais pousser vers le cloud une liste de plateformes vide par-dessus une liste existante (cf. `mergeRemote`).
 - Pagination SC instable → le script chevauche les pages (pas 50/100) et fusionne deux tris (voir NOTES).
 - `[hidden]` doit être `display:none !important` (les `display:flex` des labels l'écrasaient).
 - Ne jamais partager un tableau entre `DEFAULTS` et l'état courant (bug « réinitialiser » de la v2) : `freshDefaults()`.
