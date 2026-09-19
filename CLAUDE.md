@@ -48,5 +48,8 @@ Vérifier : `curl -s https://cybermax73.github.io/zazzulist/data/manifest.json`.
 - Pagination SC instable → le script chevauche les pages (pas 50/100) et fusionne deux tris (voir NOTES).
 - `[hidden]` doit être `display:none !important` (les `display:flex` des labels l'écrasaient).
 - Ne jamais partager un tableau entre `DEFAULTS` et l'état courant (bug « réinitialiser » de la v2) : `freshDefaults()`.
+- Le `header` est `position:sticky; z-index:10` → contexte d'empilement : tout voile/panneau lié doit être **dans** le
+  header (le voile du panneau mobile y est). Les clics par script (`.click()`) ne détectent pas une superposition :
+  vérifier avec `document.elementFromPoint(x, y)` (cf. test13 dans l'historique).
 - Les fichiers de plateforme fetchés à des moments différents peuvent lister des `platforms` incomplètes ; la page fait
   l'union par titre au chargement.
