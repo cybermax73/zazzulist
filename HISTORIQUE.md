@@ -28,6 +28,8 @@
   (effacement navigateur, navigation privée, navigateur intégré, purge Safari 7 j, changement d'appareil). Node.js +
   wrangler installés sur le poste.
 
+- Fix ⚙ muet (helper `ago` manquant après l'ajout de la synchro) — leçon : capturer les erreurs JS dans les tests.
+
 ## Backlog d'idées (brainstorm du 19/09, non priorisé, rien d'engagé)
 - Pioche : 3 titres au hasard dans la sélection, plein écran, « re-tirer ».
 - Départs imminents (« quitte Netflix le 30/09 ») — dépend de `vodPlatforms.modalities.dateEnd`, à vérifier.

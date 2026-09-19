@@ -45,6 +45,11 @@
 - Plateformes retenues : les 8 ci-dessus (TF1+, M6+, France TV volontairement exclues).
 - Garder les anciennes versions locales comme sauvegardes (`..\sc-streaming`, `..\zazzulist`).
 
+## À reprendre (fin de session 19/09/2026)
+- Max doit noter son code de synchro (⚙ → « M'envoyer mon code ») et relier son téléphone (« J'ai déjà un code »).
+- Vérifier dans quelques jours : robot nocturne (`gh run list --repo cybermax73/zazzulist`), écritures D1 (dashboard Cloudflare).
+- Attendre les retours des premiers amis avant d'ajouter des fonctions.
+
 ## Prochaines étapes possibles (rien d'engagé)
 1. Compteur de visites gratuit sans cookies (GoatCounter) — nécessite un compte à créer par Max ; snippet à ajouter
    dans `index.html`. Objectif : savoir si le site est utilisé avant d'investir plus.
