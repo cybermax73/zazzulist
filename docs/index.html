@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ZazzuList</title>
+<meta name="description" content="Les films et séries bien notés sur SensCritique, disponibles ce soir sur tes plateformes.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20viewBox='0%200%2032%2032'%20xmlns='http://www.w3.org/2000/svg'%3E%3Crect%20width='32'%20height='32'%20rx='8'%20fill='%23c8102e'/%3E%3Cpath%20d='M8%209h16l-9.5%2011H24v3H8l9.5-11H8z'%20fill='%23fff'/%3E%3Cpath%20d='M22%206l1.2%202.6L26%209.8l-2.8%201.2L22%2013.6l-1.2-2.6L18%209.8l2.8-1.2z'%20fill='%23fff'%20opacity='.9'/%3E%3C/svg%3E">
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f5f4f0; --panel: #ffffff; --text: #1c1b18; --muted: #6b6860; --line: #e2e0d9;
+    --accent: #c8102e; --chip: #efede7; --chip-text: #3a3833;
+    --r-hi: #1f8a4c; --r-mid: #d08a10; --r-low: #8a8a8a;
+    --like: #1f8a4c; --dislike: #c8102e;
+    --shadow: 0 1px 2px rgba(0,0,0,.06), 0 6px 20px rgba(0,0,0,.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141416; --panel: #1e1e22; --text: #ecebe6; --muted: #9a988f; --line: #2c2c31;
+      --chip: #2a2a2f; --chip-text: #d5d3cc;
+      --r-hi: #3fbf72; --r-mid: #e8a83a; --r-low: #8a8a8a; --like: #3fbf72; --dislike: #ef5a6a;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  a { color: inherit; }
+  button, select, input { font: inherit; color: inherit; }
+
+  header { position: sticky; top: 0; z-index: 10; background: var(--panel);
+           border-bottom: 1px solid var(--line); padding: 10px 20px 12px; }
+  .bar { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+  .bar h1 { font-size: 19px; margin: 0; font-weight: 500; letter-spacing: -.02em; white-space: nowrap;
+            display: inline-flex; align-items: center; gap: 8px; }
+  .bar h1 .logo { width: 28px; height: 28px; flex: none; }
+  .bar h1 .brand b { font-weight: 800; color: var(--accent); }
+  .grow { flex: 1 1 140px; }
+  input[type=search] { width: 100%; max-width: 260px; padding: 7px 10px; border: 1px solid var(--line);
+                       border-radius: 8px; background: var(--bg); }
+  .btn { padding: 7px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg);
+         cursor: pointer; white-space: nowrap; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  .btn.icon { padding: 6px 10px; font-size: 16px; line-height: 1; }
+  .status { color: var(--muted); font-size: 12.5px; white-space: nowrap; margin-left: auto; }
+  .status.error { color: var(--accent); white-space: normal; }
+
+  .rows { display: flex; flex-direction: column; gap: 7px; margin-top: 10px; font-size: 13px; }
+  .row { display: flex; flex-wrap: wrap; gap: 6px 22px; align-items: center; }
+  .group { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .group > .gl { font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+                 color: var(--muted); margin-right: 4px; white-space: nowrap; }
+  .group label { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); }
+  .group select, .group input[type=number] { padding: 3px 6px; border-radius: 6px; border: 1px solid var(--line);
+                                             background: var(--bg); color: var(--text); }
+  .group input[type=number] { width: 66px; text-align: center; }
+  .group input[type=range] { width: 110px; accent-color: var(--accent); }
+  .group b { color: var(--text); font-variant-numeric: tabular-nums; min-width: 2.2em; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .seg button { padding: 4px 10px; border: 0; background: transparent; cursor: pointer; color: var(--muted); }
+  .seg button.on { background: var(--text); color: var(--bg); }
+  .seg.big button { padding: 6px 14px; font-weight: 600; }
+  #universe.big button.on { background: var(--accent); color: #fff; }
+  .chip { padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line); background: transparent;
+          color: var(--muted); cursor: pointer; font-size: 12.5px; white-space: nowrap; }
+  .chip:hover { color: var(--text); }
+  .chip.inc { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .chip.exc { color: var(--accent); border-color: var(--accent); text-decoration: line-through; }
+  .chip.exc::before { content: "✕ "; text-decoration: none; }
+  .chip small { opacity: .6; font-size: 11px; margin-left: 3px; }
+  .hint { font-size: 11.5px; color: var(--muted); }
+  .hint.edge { margin-left: auto; opacity: .7; }
+  .reset { border: 0; background: none; color: var(--muted); text-decoration: underline; cursor: pointer; font-size: 12px; }
+  .reset:hover { color: var(--text); }
+
+  main { padding: 18px 20px 40px; }
+  .count { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+  .card { display: grid; grid-template-columns: 96px 1fr; background: var(--panel); border: 1px solid var(--line);
+          border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); position: relative; }
+  .card.hidden-film { opacity: .55; }
+  .poster { width: 96px; height: 100%; min-height: 144px; object-fit: cover; background: var(--chip); display: block; }
+  .body { padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .title { font-weight: 650; font-size: 15px; line-height: 1.25; padding-right: 64px; }
+  .title a { text-decoration: none; }
+  .title a:hover { text-decoration: underline; }
+  .title .year { color: var(--muted); font-weight: 400; }
+  .meta { color: var(--muted); font-size: 12.5px; display: flex; flex-wrap: wrap; gap: 4px 10px; }
+  .fmt { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+         padding: 1px 6px; border-radius: 4px; background: var(--chip); color: var(--chip-text); }
+  .season { display: inline-block; background: var(--like); color: #fff; font-size: 10.5px; font-weight: 700;
+            padding: 1px 6px; border-radius: 4px; letter-spacing: .04em; }
+  .season.soon { background: var(--chip); color: var(--chip-text); }
+  .rating { display: inline-flex; align-items: baseline; gap: 6px; }
+  .rating .n { font-weight: 750; font-size: 18px; padding: 0 7px; border-radius: 6px; color: #fff; line-height: 1.35; }
+  .rating .v { color: var(--muted); font-size: 12px; }
+  .r-hi { background: var(--r-hi); } .r-mid { background: var(--r-mid); } .r-low { background: var(--r-low); }
+  .foot { display: flex; align-items: center; gap: 6px; margin-top: auto; padding-top: 4px; flex-wrap: wrap; }
+  .plats { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
+  .plat { display: inline-block; padding: 4px 10px; border-radius: 6px; font-weight: 650; font-size: 12.5px;
+          text-decoration: none; color: #fff; background: #555; }
+  .plat.p1 { background: #e50914; }
+  .plat.p4 { background: #1b1b1b; }
+  .plat.p2 { background: #0f79af; }
+  .plat.p7 { background: #113ccf; }
+  @media (prefers-color-scheme: dark) { .plat.p4 { background: #f2f2f2; color: #111; } }
+  .plat:hover { filter: brightness(1.12); }
+  .votes { display: inline-flex; gap: 4px; }
+  .votes button { border: 1px solid var(--line); background: transparent; border-radius: 6px; padding: 2px 8px;
+                  cursor: pointer; font-size: 14px; line-height: 1.3; opacity: .55; }
+  .votes button:hover { opacity: 1; }
+  .votes button.on { opacity: 1; color: #fff; }
+  .votes button.on[data-vote=like] { background: var(--like); border-color: var(--like); }
+  .votes button.on[data-vote=dislike] { background: var(--dislike); border-color: var(--dislike); }
+  .new { position: absolute; top: 8px; left: 8px; background: var(--accent); color: #fff; font-size: 10.5px;
+         font-weight: 700; padding: 2px 6px; border-radius: 4px; letter-spacing: .04em; }
+  .tools { position: absolute; top: 6px; right: 6px; display: flex; gap: 4px; opacity: 0; transition: opacity .15s; }
+  .card:hover .tools, .card.hidden-film .tools { opacity: 1; }
+  @media (hover: none) { .tools { opacity: 1; } }
+  .tools button { border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 2px 7px;
+                  font-size: 11.5px; cursor: pointer; color: var(--muted); }
+  .tools button:hover { color: var(--text); }
+  .tools .tag { border: 0; background: var(--chip); color: var(--muted); cursor: default; }
+  details.syn { font-size: 12.5px; color: var(--muted); }
+  details.syn summary { cursor: pointer; list-style: none; color: var(--muted); }
+  details.syn summary::-webkit-details-marker { display: none; }
+  details.syn summary:hover { color: var(--text); }
+  details.syn p { margin: 4px 0 0; }
+  .empty { color: var(--muted); padding: 40px 0; text-align: center; }
+  footer { color: var(--muted); font-size: 12px; text-align: center; padding: 10px 20px 30px; }
+  footer a { color: var(--muted); }
+
+  /* ---- réglages (plateformes, données) */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 50; display: flex; align-items: center;
+             justify-content: center; padding: 16px; }
+  .modal { background: var(--panel); color: var(--text); border-radius: 14px; padding: 22px 24px; width: min(460px, 100%);
+           box-shadow: 0 20px 60px rgba(0,0,0,.35); }
+  .modal h2 { margin: 0 0 6px; font-size: 18px; }
+  .modal p { margin: 0 0 14px; color: var(--muted); font-size: 13px; }
+  .plist { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  .plist label { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border: 1px solid var(--line);
+                 border-radius: 10px; cursor: pointer; }
+  .plist label:has(input:checked) { border-color: var(--text); background: var(--chip); }
+  .plist input { accent-color: var(--accent); width: 16px; height: 16px; }
+  .modal .actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+  .modal .sub { border-top: 1px solid var(--line); margin-top: 16px; padding-top: 12px; font-size: 12.5px; color: var(--muted); }
+  .modal .sub .actions { justify-content: flex-start; margin-top: 8px; }
+  @media (max-width: 480px) { .grid { grid-template-columns: 1fr; } main, header { padding-left: 14px; padding-right: 14px; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <h1><svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M8 9h16l-9.5 11H24v3H8l9.5-11H8z" fill="#fff"/><path d="M22 6l1.2 2.6L26 9.8l-2.8 1.2L22 13.6l-1.2-2.6L18 9.8l2.8-1.2z" fill="#fff" opacity=".9"/></svg><span class="brand">Zazzu<b>List</b></span></h1>
+    <span class="seg big" id="universe"><button data-u="films">Films</button><button data-u="series">Séries</button></span>
+    <span class="seg big" id="platform"></span>
+    <div class="grow"><input id="q" type="search" placeholder="Titre, réalisateur…" autocomplete="off"></div>
+    <span id="status" class="status"></span>
+    <button id="settings" class="btn icon" title="Mes plateformes et mes données">⚙</button>
+  </div>
+
+  <div class="rows">
+    <div class="row"><div class="group" id="formats"><span class="gl">Format</span></div></div>
+    <div class="row"><div class="group" id="themes"><span class="gl">Thèmes</span></div></div>
+    <div class="row"><div class="group" id="origins"><span class="gl">Origine</span></div></div>
+    <div class="row">
+      <div class="group"><span class="gl">Critères</span>
+        <label>Note ≥ <input id="minRating" type="range" min="5" max="9" step="0.1" value="6"><b id="minRatingV">6.0</b></label>
+        <label>Après <input id="yearMin" type="number" min="1890" max="2030" placeholder="année"></label>
+        <label><span id="durLabel">Pas plus de</span> <select id="durMax"></select></label>
+      </div>
+      <div class="group"><span class="gl">Affichage</span>
+        <label hidden>Tri <select id="sort">
+            <option value="foryou" id="optForYou">Pour toi</option>
+            <option value="rating" selected>Note</option><option value="votes">Popularité</option>
+            <option value="year">Année</option><option value="new">Nouveautés</option><option value="random">Aléatoire</option>
+          </select></label>
+        <label><select id="view">
+            <option value="all">Tout</option><option value="todo">À voir (masquer vus)</option>
+            <option value="like">👍 J'ai aimé</option><option value="dislike">👎 Pas aimé</option><option value="hidden">Vus / passés</option>
+          </select></label>
+        <button class="reset" id="resetAll">réinitialiser</button>
+      </div>
+      <span class="hint edge" title="S'applique aux puces Format, Thèmes et Origine">1 clic : inclure · 2 : exclure · 3 : neutre</span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <p class="count" id="count"></p>
+  <div class="grid" id="grid"></div>
+</main>
+<footer>Notes et disponibilités : <a href="https://www.senscritique.com" target="_blank" rel="noopener">SensCritique</a> (données JustWatch), mises à jour chaque nuit. Tes votes et réglages restent dans ton navigateur.</footer>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="modal" role="dialog" aria-labelledby="mtitle">
+    <h2 id="mtitle">Tes plateformes</h2>
+    <p>ZazzuList ne charge que les films et séries disponibles sur celles-ci. Modifiable à tout moment via ⚙.</p>
+    <div class="plist" id="plist"></div>
+    <div class="actions"><button class="btn primary" id="saveSettings">C'est parti</button></div>
+    <div class="sub" id="dataTools">
+      Tes 👍/👎 et titres vus sont enregistrés dans ce navigateur uniquement. Pour les retrouver sur un autre appareil :
+      <div class="actions">
+        <button class="btn" id="exportBtn">Exporter mes données</button>
+        <label class="btn">Importer <input id="importFile" type="file" accept="application/json" hidden></label>
+        <button class="btn" id="wipeBtn" title="Efface votes, vus et réglages de ce navigateur">Tout effacer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const DATA = 'data/';
+  const NEW_DAYS = 7;          // "NOUVEAU" = entré au catalogue depuis moins de 7 jours
+  const NEW_SEASON_DAYS = 90;  // badge "Nouvelle saison"
+
+  const UNIVERSES = {
+    films:  { label: 'films', one: 'film', durLabel: 'Pas plus de',
+              formats: [['film', 'Films'], ['animation', 'Animation'], ['documentaire', 'Documentaires'],
+                        ['spectacle', 'Spectacles'], ['court', 'Courts-métrages']],
+              fmtExc: ['documentaire', 'spectacle', 'court'],
+              durations: [['90', '1h30'], ['105', '1h45'], ['120', '2h'], ['135', '2h15'], ['150', '2h30']] },
+    series: { label: 'séries', one: 'série', durLabel: 'Épisode ≤',
+              formats: [['serie', 'Séries'], ['animation', 'Animation'], ['documentaire', 'Documentaires'],
+                        ['emission', 'Émissions & télé-réalité']],
+              fmtExc: ['documentaire', 'emission'],
+              durations: [['25', '25 min'], ['35', '35 min'], ['50', '50 min'], ['65', '1h05']] },
+  };
+  // Regroupement des genres SensCritique en 12 thèmes. Un genre peut nourrir plusieurs thèmes.
+  const THEMES = {
+    'Comédie':             ['Comédie', 'Comédie romantique', 'Sketches'],
+    'Drame':               ['Drame', 'Comédie dramatique', 'Médical'],
+    'Romance':             ['Romance', 'Comédie romantique'],
+    'Thriller & polar':    ['Thriller', 'Policier', 'Gangster', 'Film noir', 'Judiciaire'],
+    'Action & aventure':   ['Action', 'Aventure', 'Arts martiaux', 'Catastrophe', 'Road movie'],
+    'SF & fantastique':    ['Science-fiction', 'Fantastique', 'Fantasy'],
+    'Horreur':             ['Épouvante-Horreur', 'Épouvante-horreur'],
+    'Historique & guerre': ['Historique', 'Guerre', 'Péplum', 'Western', 'Biopic'],
+    'Musique':             ['Musique', 'Comédie musicale', 'Bollywood'],
+    'Sport':               ['Sport'],
+    'Société & réel':      ['Société', 'Politique', 'Écologie', 'Nature', 'Science', 'Portrait', 'Essai',
+                            'Cinéma', 'Making-of', 'Animalier', 'Jeunesse'],
+    'Art & avant-garde':   ['Art', 'Peinture', 'Photographie', 'Littérature', 'Expérimental', 'Muet', 'Érotique'],
+  };
+  const CONTINENTS = ['Amérique du Nord', 'Europe', 'Asie', 'Amérique latine', 'Afrique', 'Océanie'];
+  const themeOf = (x) => Object.keys(THEMES).filter(t => THEMES[t].some(g => x.genres.includes(g)));
+
+  // ---- données utilisateur (navigateur uniquement)
+  const USER_KEY = 'zazzulist_user_v1';
+  const user = { platforms: [], hidden: {}, ratings: {} };
+  try { Object.assign(user, JSON.parse(localStorage.getItem(USER_KEY) || '{}')); } catch {}
+  const saveUser = () => { try { localStorage.setItem(USER_KEY, JSON.stringify(user)); } catch {} };
+
+  let universe = 'films';
+  try { universe = UNIVERSES[localStorage.getItem('universe')] ? localStorage.getItem('universe') : 'films'; } catch {}
+  const U = () => UNIVERSES[universe];
+
+  const DEFAULTS = { q: '', minRating: 6, minVotes: 100, platform: 'all', fmtInc: [], fmtExc: [],
+                     yearMin: '', durMax: '', sort: 'rating', view: 'all', inc: [], exc: [], origInc: [], origExc: [] };
+  const freshDefaults = () => ({ ...JSON.parse(JSON.stringify(DEFAULTS)), fmtExc: [...U().fmtExc] });
+  const state = { manifest: null, films: [], f: freshDefaults() };
+  let seed = Date.now();
+  const filtersKey = () => 'zazzulist_filters_v1_' + universe;
+  function loadFilters() {
+    state.f = freshDefaults();
+    try { Object.assign(state.f, JSON.parse(localStorage.getItem(filtersKey()) || '{}')); } catch {}
+  }
+  const saveFilters = () => { try { localStorage.setItem(filtersKey(), JSON.stringify(state.f)); } catch {} };
+  loadFilters();
+
+  // ---- helpers
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const fmtVotes = (n) => n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1).replace('.0', '') + ' k' : String(n);
+  const fmtDur = (m) => m ? (m >= 60 ? `${Math.floor(m / 60)}h${String(m % 60).padStart(2, '0')}` : `${m} min`) : '';
+  const ratingClass = (r) => r >= 7.5 ? 'r-hi' : r >= 6.5 ? 'r-mid' : 'r-low';
+  const rand = (id) => { let x = (id * 2654435761 + seed) >>> 0; x ^= x << 13; x ^= x >>> 17; x ^= x << 5; return (x >>> 0) / 4294967296; };
+  const voteOf = (id) => (user.ratings[id] || {}).vote || null;
+  const daysSince = (iso) => iso ? Math.round((Date.now() - new Date(iso)) / 86400000) : null;
+  const fmtDate = (iso) => new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  const providerName = (id) => ((state.manifest || {}).providers || []).find(p => p.id === id)?.name || ('#' + id);
+
+  // ---- "Pour toi" : affinité calculée à partir des 👍/👎 (contenu, pas de ML). Tri masqué pour l'instant.
+  const MIN_VOTES_FOR_RECO = 10;
+  const durBucket = (x) => {
+    const m = x.duration_min; if (!m) return null;
+    if (universe === 'series') return m <= 30 ? '≤ 30 min/ép' : m <= 50 ? '30-50 min/ép' : '> 50 min/ép';
+    return m < 90 ? '< 1h30' : m <= 120 ? '1h30-2h' : m <= 150 ? '2h-2h30' : '> 2h30';
+  };
+  const featuresOf = (x) => {
+    const f = [];
+    (x._themes || themeOf({ genres: x.genres || [] })).forEach(t => f.push(['thème', t]));
+    if (x.continent) f.push(['origine', x.continent]);
+    if (x.year) f.push(['époque', `années ${Math.floor(x.year / 10) * 10}`]);
+    if (x.format) f.push(['format', x.format]);
+    const d = durBucket(x); if (d) f.push(['durée', d]);
+    (x.directors || []).slice(0, 2).forEach(n => f.push(['réal', n]));
+    return f;
+  };
+  let reco = null;
+  function buildReco() {
+    const rated = Object.values(user.ratings).filter(r => r.vote && (r.universe || 'films') === universe);
+    const votes = rated.length;
+    if (votes < MIN_VOTES_FOR_RECO) { reco = { votes }; return; }
+    const likes = rated.filter(r => r.vote === 'like').length, table = {};
+    rated.forEach(r => featuresOf({ ...r, genres: r.genres || [] }).forEach(([k, v]) => {
+      const key = k + ':' + v; table[key] = table[key] || { like: 0, total: 0 };
+      table[key].total++; if (r.vote === 'like') table[key].like++;
+    }));
+    reco = { votes, baseline: (likes + 1) / (votes + 2), table };
+  }
+  function recoScore(x) {
+    if (!reco || !reco.table) return { score: 0, why: [] };
+    const parts = [];
+    featuresOf(x).forEach(([k, v]) => {
+      const c = reco.table[k + ':' + v]; if (!c) return;
+      const affinity = (c.like + 1) / (c.total + 2) - reco.baseline, weight = c.total / (c.total + 3);
+      parts.push({ k, v, s: affinity * weight * (k === 'réal' ? 1.5 : k === 'thème' ? 1 : 0.7) });
+    });
+    const score = parts.reduce((a, b) => a + b.s, 0) + 0.04 * ((x.rating || 6) - 7);
+    return { score, why: parts.filter(p => p.s > 0.02).sort((a, b) => b.s - a.s).slice(0, 3).map(p => p.v) };
+  }
+
+  // ---- filtrage
+  function filtered() {
+    const f = state.f, q = f.q.trim().toLowerCase();
+    const yMin = +f.yearMin || 0, dMax = +f.durMax || 0;
+    const viewOk = {
+      all: () => true, todo: (x) => !user.hidden[x.id], like: (x) => voteOf(x.id) === 'like',
+      dislike: (x) => voteOf(x.id) === 'dislike', hidden: (x) => !!user.hidden[x.id],
+    }[f.view] || (() => true);
+    const list = state.films.filter(x =>
+      viewOk(x) &&
+      (!f.fmtInc.length || f.fmtInc.includes(x.format)) && !f.fmtExc.includes(x.format) &&
+      (x.rating ?? 0) >= f.minRating - 1e-9 && (x.votes ?? 0) >= f.minVotes &&
+      (f.platform === 'all' || x.platforms.some(p => String(p.id) === f.platform)) &&
+      (!yMin || (x.year && x.year >= yMin)) && (!dMax || (x.duration_min && x.duration_min <= dMax)) &&
+      (!f.inc.length || f.inc.every(t => x._themes.includes(t))) && (!f.exc.length || !f.exc.some(t => x._themes.includes(t))) &&
+      (!f.origInc.length || f.origInc.includes(x.continent)) && !f.origExc.includes(x.continent) &&
+      (!q || x._search.includes(q)));
+    if (f.sort === 'foryou') list.forEach(x => { x._reco = recoScore(x); });
+    const cmp = {
+      foryou: (a, b) => (!!voteOf(a.id) - !!voteOf(b.id)) || (b._reco.score - a._reco.score) || (b.rating - a.rating),
+      rating: (a, b) => (b.rating - a.rating) || (b.votes - a.votes),
+      votes: (a, b) => (b.votes - a.votes) || (b.rating - a.rating),
+      year: (a, b) => ((b.year || 0) - (a.year || 0)) || (b.rating - a.rating),
+      new: (a, b) => ((b.first_seen || '').localeCompare(a.first_seen || '')) || (b.rating - a.rating),
+      random: (a, b) => rand(a.id) - rand(b.id),
+    }[f.sort] || ((a, b) => b.rating - a.rating);
+    return list.sort(cmp);
+  }
+
+  // ---- rendu
+  function card(x) {
+    const h = user.hidden[x.id], v = voteOf(x.id);
+    const plats = x.platforms.map(p =>
+      `<a class="plat p${p.id}" href="${esc(p.url || x.sc_url)}" target="_blank" rel="noopener">▶ ${esc(providerName(p.id))}</a>`).join('');
+    const mainFmt = U().formats[0][0];
+    const fmtLabel = x.format !== mainFmt ? `<span class="fmt">${esc((U().formats.find(f => f[0] === x.format) || [])[1] || x.format)}</span>` : '';
+    const dur = universe === 'series'
+      ? [x.seasons && `${x.seasons} saison${x.seasons > 1 ? 's' : ''}`, x.duration_min && `${x.duration_min} min/ép`].filter(Boolean).join(' · ')
+      : fmtDur(x.duration_min);
+    const meta = [dur, x.genres.slice(0, 3).join(' · '), x.directors.slice(0, 2).join(', '), x.country].filter(Boolean)
+      .map(esc).join('<span>·</span> ');
+    const tools = h
+      ? `<button class="tag">${h === 'seen' ? 'vu' : 'passé'}</button><button data-act="unhide">↩ réafficher</button>`
+      : `<button data-act="seen" title="Déjà vu">✓ vu</button><button data-act="skip" title="Pas intéressé">✕ passer</button>`;
+    let seasonBadge = '';
+    if (universe === 'series' && x.last_season_date) {
+      const d = daysSince(x.last_season_date);
+      if (d >= 0 && d <= NEW_SEASON_DAYS) seasonBadge = x.last_season >= 2
+        ? `<span class="season" title="Saison ${x.last_season} sortie le ${fmtDate(x.last_season_date)}">Nouvelle saison · S${x.last_season}</span>`
+        : `<span class="season" title="Sortie le ${fmtDate(x.last_season_date)}">Nouvelle série</span>`;
+      else if (d < 0 && d >= -60) seasonBadge = `<span class="season soon">S${x.last_season} le ${fmtDate(x.last_season_date)}</span>`;
+    }
+    const isNew = x.first_seen && daysSince(x.first_seen) <= NEW_DAYS;
+    const why = state.f.sort === 'foryou' && x._reco && x._reco.why.length
+      ? `<div class="why"><b>pour toi</b> · ${x._reco.why.map(esc).join(' · ')}</div>` : '';
+    return `<article class="card${h ? ' hidden-film' : ''}" data-id="${x.id}">
+      ${isNew ? '<span class="new" title="Arrivé au catalogue cette semaine">NOUVEAU</span>' : ''}
+      <img class="poster" loading="lazy" src="${esc(x.poster || '')}" alt="">
+      <div class="body">
+        <div class="title"><a href="${esc(x.sc_url)}" target="_blank" rel="noopener" title="Fiche SensCritique">${esc(x.title)}</a>
+          <span class="year">${x.year ? '(' + x.year + ')' : ''}</span></div>
+        <div class="rating"><span class="n ${ratingClass(x.rating)}">${x.rating.toFixed(1)}</span>
+          <span class="v">${fmtVotes(x.votes)} votes${x.original_title && x.original_title !== x.title ? ' · ' + esc(x.original_title) : ''}</span></div>
+        <div class="meta">${seasonBadge}${fmtLabel}${meta}</div>
+        ${why}
+        ${x.synopsis ? `<details class="syn"><summary>Synopsis</summary><p>${esc(x.synopsis)}</p></details>` : ''}
+        <div class="foot">
+          <div class="plats">${plats}</div>
+          <div class="votes">
+            <button data-vote="like" class="${v === 'like' ? 'on' : ''}" title="J'ai aimé">👍</button>
+            <button data-vote="dislike" class="${v === 'dislike' ? 'on' : ''}" title="Je n'ai pas aimé">👎</button>
+          </div>
+        </div>
+      </div>
+      <div class="tools">${tools}</div>
+    </article>`;
+  }
+
+  function render() {
+    const list = filtered();
+    $('grid').innerHTML = list.length ? list.map(card).join('') : `<p class="empty">Aucun${universe === 'series' ? 'e série' : ' film'} ne correspond à ces filtres.</p>`;
+    const hiddenN = Object.keys(user.hidden).length;
+    const likes = Object.values(user.ratings).filter(r => r.vote === 'like').length;
+    const dislikes = Object.values(user.ratings).filter(r => r.vote === 'dislike').length;
+    const newN = state.films.filter(x => x.first_seen && daysSince(x.first_seen) <= NEW_DAYS).length;
+    $('count').textContent = `${list.length} ${U().one}${list.length > 1 ? 's' : ''} sur ${state.films.length}`
+      + (hiddenN ? ` · ${hiddenN} vu${hiddenN > 1 ? 's' : ''}/passé${hiddenN > 1 ? 's' : ''}` : '')
+      + (likes + dislikes ? ` · ${likes} 👍 ${dislikes} 👎` : '')
+      + (newN ? ` · ${newN} nouveau${newN > 1 ? 'x' : ''} cette semaine` : '');
+  }
+
+  function renderChips() {
+    const f = state.f;
+    const fcount = {}; state.films.forEach(x => fcount[x.format] = (fcount[x.format] || 0) + 1);
+    const fcls = (k) => f.fmtInc.includes(k) ? 'inc' : f.fmtExc.includes(k) ? 'exc' : '';
+    $('formats').innerHTML = '<span class="gl">Format</span>' + U().formats.slice(1).map(([k, label]) =>
+      `<button class="chip ${fcls(k)}" data-fmt="${k}">${label}<small>${fcount[k] || 0}</small></button>`).join('');
+    const tcount = {}; state.films.forEach(x => x._themes.forEach(t => tcount[t] = (tcount[t] || 0) + 1));
+    const cls = (t) => f.inc.includes(t) ? 'inc' : f.exc.includes(t) ? 'exc' : '';
+    $('themes').innerHTML = '<span class="gl">Thèmes</span>' + Object.keys(THEMES).map(t =>
+      `<button class="chip ${cls(t)}" data-theme="${esc(t)}" title="${esc(THEMES[t].join(', '))}">${esc(t)}<small>${tcount[t] || 0}</small></button>`).join('');
+    const ocount = {}; state.films.forEach(x => { if (x.continent) ocount[x.continent] = (ocount[x.continent] || 0) + 1; });
+    const ocls = (c) => f.origInc.includes(c) ? 'inc' : f.origExc.includes(c) ? 'exc' : '';
+    $('origins').innerHTML = '<span class="gl">Origine</span>' + CONTINENTS.map(c =>
+      `<button class="chip ${ocls(c)}" data-orig="${esc(c)}" title="Premier pays de production">${esc(c)}<small>${ocount[c] || 0}</small></button>`).join('');
+  }
+
+  function renderPlatformSeg() {
+    const seg = $('platform');
+    if (user.platforms.length < 2) { seg.hidden = true; return; }
+    seg.hidden = false;
+    if (!['all', ...user.platforms.map(String)].includes(String(state.f.platform))) state.f.platform = 'all';
+    seg.innerHTML = `<button data-v="all" class="${state.f.platform === 'all' ? 'on' : ''}">Toutes</button>`
+      + user.platforms.map(id => `<button data-v="${id}" class="${String(state.f.platform) === String(id) ? 'on' : ''}">${esc(providerName(id))}</button>`).join('');
+  }
+
+  function renderFilterUI() {
+    const f = state.f;
+    $('q').value = f.q;
+    $('minRating').value = f.minRating; $('minRatingV').textContent = Number(f.minRating).toFixed(1);
+    $('view').value = f.view;
+    [...$('universe').children].forEach(b => b.classList.toggle('on', b.dataset.u === universe));
+    $('durLabel').textContent = U().durLabel;
+    $('durMax').innerHTML = '<option value="">—</option>' + U().durations.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+    $('yearMin').value = f.yearMin; $('durMax').value = f.durMax;
+    buildReco();
+    const opt = $('optForYou'); opt.disabled = !(reco && reco.table);
+    if (opt.disabled && f.sort === 'foryou') f.sort = 'rating';
+    $('sort').value = f.sort;
+    renderPlatformSeg(); renderChips();
+  }
+
+  function setStatus(msg, isError) { $('status').textContent = msg; $('status').classList.toggle('error', !!isError); }
+
+  // ---- chargement : un fichier par plateforme choisie, fusion par titre
+  let loadToken = 0;
+  async function load() {
+    const token = ++loadToken;
+    if (!user.platforms.length) { openSettings(true); return; }
+    setStatus('Chargement…');
+    try {
+      if (!state.manifest) state.manifest = await (await fetch(DATA + 'manifest.json', { cache: 'no-cache' })).json();
+      const files = await Promise.all(user.platforms.map(id =>
+        fetch(`${DATA}${universe}_${id}.json`, { cache: 'no-cache' }).then(r => r.ok ? r.json() : { titles: [] })));
+      if (token !== loadToken) return;
+      const mine = new Set(user.platforms);
+      const byId = new Map();
+      files.forEach(file => (file.titles || []).forEach(t => {
+        if (byId.has(t.id)) return;
+        const x = { ...t, rating: t.rating ?? 0, votes: t.votes ?? 0, genres: t.genres || [], directors: t.directors || [],
+          format: t.format || U().formats[0][0],
+          platforms: (t.platforms || []).filter(p => mine.has(p.id)),
+          _search: [t.title, t.original_title, ...(t.directors || [])].filter(Boolean).join(' ').toLowerCase() };
+        x._themes = themeOf(x);
+        byId.set(t.id, x);
+      }));
+      state.films = [...byId.values()];
+      renderFilterUI(); render();
+      const d = state.manifest.updated_at ? new Date(state.manifest.updated_at) : null;
+      setStatus(`${state.films.length} ${U().label} · catalogue du ${d ? d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : '?'}`);
+    } catch (e) { setStatus('Impossible de charger le catalogue (' + e.message + ')', true); }
+  }
+
+  // ---- votes & masquage (navigateur)
+  const SNAPSHOT = ['title', 'original_title', 'year', 'rating', 'votes', 'duration_min', 'genres', 'format', 'directors',
+                    'country', 'continent', 'sc_url', 'seasons'];
+  function rate(id, vote) {
+    if (vote) {
+      const x = state.films.find(f => f.id === id) || {};
+      const entry = user.ratings[id] || {};
+      SNAPSHOT.forEach(k => { if (x[k] !== undefined) entry[k] = x[k]; });
+      Object.assign(entry, { vote, universe, at: new Date().toISOString() });
+      user.ratings[id] = entry;
+      user.hidden[id] = 'seen'; // un titre noté est un titre vu
+    } else delete user.ratings[id];
+    saveUser(); buildReco(); render();
+  }
+  function hide(id, st) { if (st) user.hidden[id] = st; else delete user.hidden[id]; saveUser(); render(); }
+
+  // ---- réglages
+  function openSettings(first) {
+    const plist = $('plist');
+    plist.innerHTML = ((state.manifest || {}).providers || []).map(p =>
+      `<label><input type="checkbox" value="${p.id}" ${user.platforms.includes(p.id) ? 'checked' : ''}> ${esc(p.name)}</label>`).join('');
+    $('saveSettings').textContent = first ? 'C\'est parti' : 'Enregistrer';
+    $('dataTools').hidden = !!first;
+    $('overlay').hidden = false;
+  }
+  $('settings').addEventListener('click', () => openSettings(false));
+  $('saveSettings').addEventListener('click', () => {
+    const chosen = [...$('plist').querySelectorAll('input:checked')].map(i => +i.value);
+    if (!chosen.length) { alert('Choisis au moins une plateforme.'); return; }
+    user.platforms = chosen; saveUser();
+    $('overlay').hidden = true; load();
+  });
+  $('overlay').addEventListener('click', e => { if (e.target === $('overlay') && user.platforms.length) $('overlay').hidden = true; });
+  $('exportBtn').addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify({ app: 'zazzulist', exported_at: new Date().toISOString(), ...user }, null, 1)], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = `zazzulist-${new Date().toISOString().slice(0, 10)}.json`; a.click(); URL.revokeObjectURL(a.href);
+  });
+  $('importFile').addEventListener('change', async e => {
+    const file = e.target.files[0]; if (!file) return;
+    try {
+      const d = JSON.parse(await file.text());
+      if (!d || typeof d !== 'object' || (!d.ratings && !d.hidden)) throw new Error('format inattendu');
+      Object.assign(user.ratings, d.ratings || {}); Object.assign(user.hidden, d.hidden || {});
+      if (Array.isArray(d.platforms) && d.platforms.length) user.platforms = d.platforms;
+      saveUser(); $('overlay').hidden = true; load();
+      alert(`Import réussi : ${Object.keys(d.ratings || {}).length} votes, ${Object.keys(d.hidden || {}).length} titres vus/passés.`);
+    } catch (err) { alert('Fichier illisible : ' + err.message); }
+    e.target.value = '';
+  });
+  $('wipeBtn').addEventListener('click', () => {
+    if (!confirm('Effacer tous tes votes, titres vus et réglages de ce navigateur ?')) return;
+    try { Object.keys(localStorage).filter(k => k.startsWith('zazzulist') || k === 'universe').forEach(k => localStorage.removeItem(k)); } catch {}
+    location.reload();
+  });
+
+  // ---- événements filtres
+  const upd = (k, v) => { state.f[k] = v; saveFilters(); render(); };
+  $('q').addEventListener('input', e => upd('q', e.target.value));
+  $('minRating').addEventListener('input', e => { $('minRatingV').textContent = Number(e.target.value).toFixed(1); upd('minRating', +e.target.value); });
+  $('yearMin').addEventListener('input', e => upd('yearMin', e.target.value));
+  $('durMax').addEventListener('change', e => upd('durMax', e.target.value));
+  $('sort').addEventListener('change', e => { seed = Date.now(); upd('sort', e.target.value); });
+  $('view').addEventListener('change', e => upd('view', e.target.value));
+  $('platform').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    [...$('platform').children].forEach(x => x.classList.toggle('on', x === b)); upd('platform', b.dataset.v);
+  });
+  function cycle(incKey, excKey, v) { // neutre -> inclus -> exclu -> neutre
+    const f = state.f;
+    if (f[incKey].includes(v)) { f[incKey] = f[incKey].filter(x => x !== v); f[excKey] = [...f[excKey], v]; }
+    else if (f[excKey].includes(v)) { f[excKey] = f[excKey].filter(x => x !== v); }
+    else f[incKey] = [...f[incKey], v];
+    saveFilters(); renderChips(); render();
+  }
+  $('formats').addEventListener('click', e => { const b = e.target.closest('button'); if (b) cycle('fmtInc', 'fmtExc', b.dataset.fmt); });
+  $('themes').addEventListener('click', e => { const b = e.target.closest('button'); if (b) cycle('inc', 'exc', b.dataset.theme); });
+  $('origins').addEventListener('click', e => { const b = e.target.closest('button'); if (b) cycle('origInc', 'origExc', b.dataset.orig); });
+  $('resetAll').addEventListener('click', () => { state.f = freshDefaults(); saveFilters(); renderFilterUI(); render(); });
+  $('grid').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    const id = +b.closest('.card').dataset.id;
+    if (b.dataset.vote) rate(id, voteOf(id) === b.dataset.vote ? null : b.dataset.vote);
+    else if (b.dataset.act) hide(id, b.dataset.act === 'unhide' ? null : b.dataset.act);
+  });
+  $('universe').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b || b.dataset.u === universe) return;
+    universe = b.dataset.u; try { localStorage.setItem('universe', universe); } catch {}
+    loadFilters(); state.films = []; $('grid').innerHTML = ''; $('count').textContent = '';
+    renderFilterUI(); load();
+  });
+
+  (async () => {
+    try { state.manifest = await (await fetch(DATA + 'manifest.json', { cache: 'no-cache' })).json(); }
+    catch { setStatus('Catalogue indisponible', true); return; }
+    renderFilterUI(); load();
+  })();
+})();
+</script>
+</body>
+</html>

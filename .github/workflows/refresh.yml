@@ -1,0 +1,36 @@
+name: Rafraîchir le catalogue
+
+on:
+  schedule:
+    - cron: "15 4 * * *"   # chaque nuit à 04:15 UTC (06:15 Paris en été)
+  workflow_dispatch:        # bouton "Run workflow" pour lancer à la main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Récupérer films et séries depuis SensCritique
+        run: python scripts/fetch_catalog.py
+      - name: Publier les données si elles ont changé
+        run: |
+          git config user.name "zazzulist-bot"
+          git config user.email "zazzulist-bot@users.noreply.github.com"
+          git add docs/data
+          if git diff --cached --quiet; then
+            echo "Catalogue inchangé."
+          else
+            git commit -m "Catalogue du $(date -u +%Y-%m-%d)"
+            git push
+          fi

@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+docs/data/*.tmp
+.DS_Store
+max-zazzulist.json
+*-zazzulist.json
