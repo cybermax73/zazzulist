@@ -4,3 +4,4 @@ docs/data/*.tmp
 .DS_Store
 max-zazzulist.json
 *-zazzulist.json
+tools/.edgeprofile/
