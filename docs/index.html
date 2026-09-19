@@ -99,14 +99,12 @@
   .r-hi { background: var(--r-hi); } .r-mid { background: var(--r-mid); } .r-low { background: var(--r-low); }
   .foot { display: flex; align-items: center; gap: 6px; margin-top: auto; padding-top: 4px; flex-wrap: wrap; }
   .plats { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
-  .plat { display: inline-block; padding: 4px 10px; border-radius: 6px; font-weight: 650; font-size: 12.5px;
-          text-decoration: none; color: #fff; background: #555; }
-  .plat.p1 { background: #e50914; }
-  .plat.p4 { background: #1b1b1b; }
-  .plat.p2 { background: #0f79af; }
-  .plat.p7 { background: #113ccf; }
-  @media (prefers-color-scheme: dark) { .plat.p4 { background: #f2f2f2; color: #111; } }
-  .plat:hover { filter: brightness(1.12); }
+  .plat { display: inline-flex; align-items: center; border-radius: 6px; overflow: hidden; text-decoration: none;
+          border: 1px solid var(--line); background: #fff; height: 28px; }
+  .plat img { height: 26px; width: auto; display: block; }
+  .plat.txt { padding: 4px 10px; font-weight: 650; font-size: 12.5px; color: #fff; background: #555; }
+  .plat:hover { filter: brightness(1.08); box-shadow: 0 0 0 2px var(--line); }
+  .plist img { height: 22px; width: auto; border-radius: 4px; }
   .votes { display: inline-flex; gap: 4px; }
   .votes button { border: 1px solid var(--line); background: transparent; border-radius: 6px; padding: 2px 8px;
                   cursor: pointer; font-size: 14px; line-height: 1.3; opacity: .55; }
@@ -202,6 +200,8 @@
     <div class="actions"><button class="btn primary" id="saveSettings">C'est parti</button></div>
     <div class="sub" id="dataTools">
       Tes 👍/👎 et titres vus sont enregistrés dans ce navigateur uniquement. Pour les retrouver sur un autre appareil :
+      <b>Exporter</b> enregistre un fichier <code>zazzulist-…json</code> dans tes Téléchargements ; <b>Importer</b> te demande
+      de choisir ce fichier.
       <div class="actions">
         <button class="btn" id="exportBtn">Exporter mes données</button>
         <label class="btn">Importer <input id="importFile" type="file" accept="application/json" hidden></label>
@@ -281,7 +281,9 @@
   const voteOf = (id) => (user.ratings[id] || {}).vote || null;
   const daysSince = (iso) => iso ? Math.round((Date.now() - new Date(iso)) / 86400000) : null;
   const fmtDate = (iso) => new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-  const providerName = (id) => ((state.manifest || {}).providers || []).find(p => p.id === id)?.name || ('#' + id);
+  const providerOf = (id) => ((state.manifest || {}).providers || []).find(p => p.id === id) || {};
+  const providerName = (id) => providerOf(id).name || ('#' + id);
+  const providerLogo = (id) => providerOf(id).logo || null;
 
   // ---- "Pour toi" : affinité calculée à partir des 👍/👎 (contenu, pas de ML). Tri masqué pour l'instant.
   const MIN_VOTES_FOR_RECO = 10;
@@ -356,8 +358,11 @@
   // ---- rendu
   function card(x) {
     const h = user.hidden[x.id], v = voteOf(x.id);
-    const plats = x.platforms.map(p =>
-      `<a class="plat p${p.id}" href="${esc(p.url || x.sc_url)}" target="_blank" rel="noopener">▶ ${esc(providerName(p.id))}</a>`).join('');
+    const plats = x.platforms.map(p => {
+      const logo = providerLogo(p.id), name = esc(providerName(p.id));
+      const inner = logo ? `<img src="img/${logo}" alt="${name}" title="Voir sur ${name}">` : `▶ ${name}`;
+      return `<a class="plat${logo ? '' : ' txt'}" href="${esc(p.url || x.sc_url)}" target="_blank" rel="noopener">${inner}</a>`;
+    }).join('');
     const mainFmt = U().formats[0][0];
     const fmtLabel = x.format !== mainFmt ? `<span class="fmt">${esc((U().formats.find(f => f[0] === x.format) || [])[1] || x.format)}</span>` : '';
     const dur = universe === 'series'
@@ -472,7 +477,11 @@
       const mine = new Set(user.platforms);
       const byId = new Map();
       files.forEach(file => (file.titles || []).forEach(t => {
-        if (byId.has(t.id)) return;
+        if (byId.has(t.id)) { // même titre vu via une autre plateforme : on fusionne les plateformes
+          const known = byId.get(t.id), ids = new Set(known.platforms.map(p => p.id));
+          (t.platforms || []).forEach(p => { if (mine.has(p.id) && !ids.has(p.id)) known.platforms.push(p); });
+          return;
+        }
         const x = { ...t, rating: t.rating ?? 0, votes: t.votes ?? 0, genres: t.genres || [], directors: t.directors || [],
           format: t.format || U().formats[0][0],
           platforms: (t.platforms || []).filter(p => mine.has(p.id)),
@@ -507,7 +516,7 @@
   function openSettings(first) {
     const plist = $('plist');
     plist.innerHTML = ((state.manifest || {}).providers || []).map(p =>
-      `<label><input type="checkbox" value="${p.id}" ${user.platforms.includes(p.id) ? 'checked' : ''}> ${esc(p.name)}</label>`).join('');
+      `<label><input type="checkbox" value="${p.id}" ${user.platforms.includes(p.id) ? 'checked' : ''}> ${p.logo ? `<img src="img/${p.logo}" alt="">` : ''} ${esc(p.name)}</label>`).join('');
     $('saveSettings').textContent = first ? 'C\'est parti' : 'Enregistrer';
     $('dataTools').hidden = !!first;
     $('overlay').hidden = false;

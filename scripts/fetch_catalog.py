@@ -36,7 +36,14 @@ PROVIDERS = {
     4: "Canal+",
     2: "Prime Video",
     7: "Disney+",
+    6: "Apple TV+",
+    28: "MAX",
+    19: "Paramount+",
+    18: "Arte",
 }
+# Logos (docs/img/) : ceux affichés par SensCritique sur sa page streaming.
+LOGOS = {1: "netflix.png", 4: "canalplus.png", 2: "primevideo.png", 7: "disneyplus.png",
+         6: "appletvplus.png", 28: "max.png", 19: "paramountplus.png", 18: "arte.png"}
 UNIVERSES = {"films": "movie", "series": "tvShow"}
 
 MIN_RATING = 6
@@ -303,7 +310,7 @@ def main(argv):
             counts[f"{universe}_{provider_id}"] = build(universe, provider_id)
     manifest = read_json(os.path.join(DATA_DIR, "manifest.json"), {})
     manifest.update({
-        "providers": [{"id": pid, "name": name} for pid, name in PROVIDERS.items()],
+        "providers": [{"id": pid, "name": name, "logo": LOGOS.get(pid)} for pid, name in PROVIDERS.items()],
         "universes": list(UNIVERSES),
         "min_rating": MIN_RATING,
         "updated_at": datetime.now(timezone.utc).isoformat(timespec="minutes"),

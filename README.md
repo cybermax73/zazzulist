@@ -1,7 +1,7 @@
 # ZazzuList
 
 Les films et séries **bien notés sur SensCritique** (≥ 6/10) qui sont **disponibles ce soir** sur tes plateformes
-(Netflix, Canal+, Prime Video, Disney+), avec lien direct vers la plateforme.
+(Netflix, Canal+, Prime Video, Disney+, Apple TV+, MAX, Paramount+, Arte), avec lien direct vers la plateforme.
 
 Site statique : aucune inscription, aucun serveur. Tes 👍/👎, titres vus et plateformes restent dans ton navigateur
 (exportables / importables via ⚙ pour passer d'un appareil à l'autre).
