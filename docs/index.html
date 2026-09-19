@@ -107,8 +107,9 @@
   .plat img { height: 26px; width: auto; display: block; }
   .plat.txt { padding: 4px 10px; font-weight: 650; font-size: 12.5px; color: #fff; background: #555; }
   .plat:hover { filter: brightness(1.08); box-shadow: 0 0 0 2px var(--line); }
-  .plist img { flex: 1 1 0; min-width: 0; width: 100%; height: auto; max-height: 34px; object-fit: contain;
-               object-position: left center; border-radius: 4px; }
+  /* le logo vit dans une boîte de taille fixe : il ne peut jamais en sortir, quel que soit le moteur */
+  .plist .lg { flex: 1 1 0; min-width: 0; height: 34px; overflow: hidden; display: block; }
+  .plist .lg img { display: block; width: 100%; height: 100%; object-fit: contain; object-position: left center; border-radius: 4px; }
   .votes { display: inline-flex; gap: 4px; }
   .votes button { border: 1px solid var(--line); background: transparent; border-radius: 6px; padding: 2px 8px;
                   cursor: pointer; font-size: 14px; line-height: 1.3; opacity: .55; }
@@ -143,7 +144,8 @@
   .modal p { margin: 0 0 14px; color: var(--muted); font-size: 13px; }
   .plist { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
   .plist label { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border: 1px solid var(--line);
-                 border-radius: 10px; cursor: pointer; min-width: 0; }
+                 border-radius: 10px; cursor: pointer; min-width: 0; overflow: hidden; }
+  .plist input { flex: none; }
   .plist label:has(input:checked) { border-color: var(--text); background: var(--chip); }
   .plist input { accent-color: var(--accent); width: 16px; height: 16px; }
   .modal .actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
@@ -569,7 +571,7 @@
   function openSettings(first) {
     const plist = $('plist');
     plist.innerHTML = ((state.manifest || {}).providers || []).map(p =>
-      `<label title="${esc(p.name)}"><input type="checkbox" value="${p.id}" ${user.platforms.includes(p.id) ? 'checked' : ''} aria-label="${esc(p.name)}"> ${p.logo ? `<img src="img/${p.logo}" alt="${esc(p.name)}">` : esc(p.name)}</label>`).join('');
+      `<label title="${esc(p.name)}"><input type="checkbox" value="${p.id}" ${user.platforms.includes(p.id) ? 'checked' : ''} aria-label="${esc(p.name)}"> ${p.logo ? `<span class="lg"><img src="img/${p.logo}" alt="${esc(p.name)}"></span>` : esc(p.name)}</label>`).join('');
     $('saveSettings').textContent = first ? 'C\'est parti' : 'Enregistrer';
     $('dataTools').hidden = !!first;
     $('overlay').hidden = false;
