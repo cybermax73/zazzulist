@@ -1,1 +1,1 @@
-{"providers":[{"id":1,"name":"Netflix"},{"id":4,"name":"Canal+"},{"id":2,"name":"Prime Video"},{"id":7,"name":"Disney+"}],"universes":["films","series"],"min_rating":6,"updated_at":"2026-09-19T17:30+00:00"}
+{"providers":[{"id":1,"name":"Netflix"},{"id":4,"name":"Canal+"},{"id":2,"name":"Prime Video"},{"id":7,"name":"Disney+"}],"universes":["films","series"],"min_rating":6,"updated_at":"2026-09-19T17:24+00:00","counts":{"films_1":1268,"films_4":255,"films_2":964,"films_7":710,"series_1":1546,"series_4":162,"series_2":512,"series_7":366}}
