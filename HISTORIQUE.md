@@ -22,6 +22,8 @@
 - Retours mobile de Max (Xiaomi) : filtres trop encombrants → panneau glissant depuis le bas ; logos qui débordent dans la
   fenêtre plateformes → logos seuls ; curseur de note difficile → pouce 26 px, zone 44 px, `touch-action:none`, boutons − / +.
 
+- Liste « à voir » ajoutée (bouton + vue), rappel d'export, demande de stockage persistant.
+
 ## Backlog d'idées (brainstorm du 19/09, non priorisé, rien d'engagé)
 - Pioche : 3 titres au hasard dans la sélection, plein écran, « re-tirer ».
 - Départs imminents (« quitte Netflix le 30/09 ») — dépend de `vodPlatforms.modalities.dateEnd`, à vérifier.
@@ -32,7 +34,7 @@
   Firebase) pour démarrer avec des centaines de votes.
 - Complément JustWatch pour les ~20 % de titres Canal+ absents du référentiel SC.
 - Note pondérée par le nombre de votes (moyenne bayésienne) pour éviter les 8,3 à 60 votes.
-- Liste « à voir » (wishlist) ; raccourcis clavier ; alerte quand un titre « à voir » quitte le catalogue.
+- Raccourcis clavier ; alerte quand un titre « à voir » quitte le catalogue.
 - Compteur de visites (GoatCounter / Cloudflare Analytics, gratuits, sans cookies).
 - Comptes + synchro si le projet devient sérieux.
 

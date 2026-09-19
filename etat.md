@@ -24,6 +24,10 @@
 - **Mobile (≤ 720 px)** : les filtres vivent dans un panneau qui glisse depuis le bas (bouton « Filtres » + badge du nombre
   de filtres actifs, bouton « Voir N films » pour fermer) ; le sélecteur de plateforme y est déplacé ; curseur de note
   agrandi + boutons − / + ; fenêtre plateformes = logos seuls.
+- **Liste à voir** : bouton « + À voir » sur chaque carte (à côté de 👍/👎), vue « 🔖 Ma liste à voir » ; un titre noté
+  ou marqué vu/passé sort automatiquement de la liste. Stockée dans `user.watch` (localStorage) avec instantané du titre.
+- Protection des données : `navigator.storage.persist()` demandé au premier enregistrement ; compteur de modifications
+  depuis le dernier export (point rouge sur ⚙ à partir de 15, texte dans la fenêtre ⚙).
 - ⚙ : choix des plateformes (première visite = fenêtre obligatoire), export / import JSON, tout effacer.
 - Code présent mais **masqué** (Max a voulu épurer) : tri « Pour toi » (affinité 👍/👎, `recoScore()`), tris popularité /
   année / nouveautés / aléatoire, sélecteur de votes min, case « nouvelle saison ».

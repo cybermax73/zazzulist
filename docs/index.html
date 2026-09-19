@@ -117,6 +117,13 @@
   .votes button.on { opacity: 1; color: #fff; }
   .votes button.on[data-vote=like] { background: var(--like); border-color: var(--like); }
   .votes button.on[data-vote=dislike] { background: var(--dislike); border-color: var(--dislike); }
+  .votes button.watch { font-size: 12.5px; font-weight: 650; padding: 3px 9px; }
+  .votes button.watch.on { background: var(--text); border-color: var(--text); color: var(--bg); }
+  .backup { font-size: 12px; color: var(--muted); margin-top: 8px; }
+  .backup b { color: var(--accent); }
+  #settings.dot { position: relative; }
+  #settings.dot::after { content: ""; position: absolute; top: 4px; right: 4px; width: 8px; height: 8px; border-radius: 50%;
+                         background: var(--accent); }
   .new { position: absolute; top: 8px; left: 8px; background: var(--accent); color: #fff; font-size: 10.5px;
          font-weight: 700; padding: 2px 6px; border-radius: 4px; letter-spacing: .04em; }
   .tools { position: absolute; top: 6px; right: 6px; display: flex; gap: 4px; opacity: 0; transition: opacity .15s; }
@@ -230,7 +237,7 @@
             <option value="year">Année</option><option value="new">Nouveautés</option><option value="random">Aléatoire</option>
           </select></label>
         <label><select id="view">
-            <option value="all">Tout</option><option value="todo">À voir (masquer vus)</option>
+            <option value="all">Tout</option><option value="watch">🔖 Ma liste à voir</option><option value="todo">Non vus (masquer vus)</option>
             <option value="like">👍 J'ai aimé</option><option value="dislike">👎 Pas aimé</option><option value="hidden">Vus / passés</option>
           </select></label>
         <button class="reset" id="resetAll">réinitialiser</button>
@@ -254,7 +261,7 @@
     <div class="plist" id="plist"></div>
     <div class="actions"><button class="btn primary" id="saveSettings">C'est parti</button></div>
     <div class="sub" id="dataTools">
-      Tes 👍/👎 et titres vus sont enregistrés dans ce navigateur uniquement. Pour les retrouver sur un autre appareil :
+      Ta liste à voir, tes 👍/👎 et titres vus sont enregistrés dans ce navigateur uniquement. Pour les retrouver sur un autre appareil :
       <b>Exporter</b> enregistre un fichier <code>zazzulist-…json</code> dans tes Téléchargements ; <b>Importer</b> te demande
       de choisir ce fichier.
       <div class="actions">
@@ -262,6 +269,7 @@
         <label class="btn">Importer <input id="importFile" type="file" accept="application/json" hidden></label>
         <button class="btn" id="wipeBtn" title="Efface votes, vus et réglages de ce navigateur">Tout effacer</button>
       </div>
+      <div class="backup" id="backupInfo"></div>
     </div>
   </div>
 </div>
@@ -306,9 +314,14 @@
 
   // ---- données utilisateur (navigateur uniquement)
   const USER_KEY = 'zazzulist_user_v1';
-  const user = { platforms: [], hidden: {}, ratings: {} };
+  const user = { platforms: [], hidden: {}, ratings: {}, watch: {}, changes: 0, lastExport: null };
   try { Object.assign(user, JSON.parse(localStorage.getItem(USER_KEY) || '{}')); } catch {}
-  const saveUser = () => { try { localStorage.setItem(USER_KEY, JSON.stringify(user)); } catch {} };
+  let persistAsked = false;
+  const saveUser = () => {
+    try { localStorage.setItem(USER_KEY, JSON.stringify(user)); } catch {}
+    // demande au navigateur de ne jamais purger ce stockage pour faire de la place (Chrome/Firefox/Edge)
+    if (!persistAsked && navigator.storage && navigator.storage.persist) { persistAsked = true; navigator.storage.persist().catch(() => {}); }
+  };
 
   let universe = 'films';
   try { universe = UNIVERSES[localStorage.getItem('universe')] ? localStorage.getItem('universe') : 'films'; } catch {}
@@ -386,7 +399,7 @@
     const f = state.f, q = f.q.trim().toLowerCase();
     const yMin = +f.yearMin || 0, dMax = +f.durMax || 0;
     const viewOk = {
-      all: () => true, todo: (x) => !user.hidden[x.id], like: (x) => voteOf(x.id) === 'like',
+      all: () => true, watch: (x) => !!user.watch[x.id], todo: (x) => !user.hidden[x.id], like: (x) => voteOf(x.id) === 'like',
       dislike: (x) => voteOf(x.id) === 'dislike', hidden: (x) => !!user.hidden[x.id],
     }[f.view] || (() => true);
     const list = state.films.filter(x =>
@@ -453,6 +466,7 @@
         <div class="foot">
           <div class="plats">${plats}</div>
           <div class="votes">
+            <button data-watch="1" class="watch ${user.watch[x.id] ? 'on' : ''}" title="${user.watch[x.id] ? 'Retirer de ma liste à voir' : 'Ajouter à ma liste à voir'}">${user.watch[x.id] ? '✓ À voir' : '+ À voir'}</button>
             <button data-vote="like" class="${v === 'like' ? 'on' : ''}" title="J'ai aimé">👍</button>
             <button data-vote="dislike" class="${v === 'dislike' ? 'on' : ''}" title="Je n'ai pas aimé">👎</button>
           </div>
@@ -466,10 +480,12 @@
     const list = filtered();
     $('grid').innerHTML = list.length ? list.map(card).join('') : `<p class="empty">Aucun${universe === 'series' ? 'e série' : ' film'} ne correspond à ces filtres.</p>`;
     const hiddenN = Object.keys(user.hidden).length;
+    const watchN = Object.keys(user.watch).length;
     const likes = Object.values(user.ratings).filter(r => r.vote === 'like').length;
     const dislikes = Object.values(user.ratings).filter(r => r.vote === 'dislike').length;
     const newN = state.films.filter(x => x.first_seen && daysSince(x.first_seen) <= NEW_DAYS).length;
     $('count').textContent = `${list.length} ${U().one}${list.length > 1 ? 's' : ''} sur ${state.films.length}`
+      + (watchN ? ` · ${watchN} à voir` : '')
       + (hiddenN ? ` · ${hiddenN} vu${hiddenN > 1 ? 's' : ''}/passé${hiddenN > 1 ? 's' : ''}` : '')
       + (likes + dislikes ? ` · ${likes} 👍 ${dislikes} 👎` : '')
       + (newN ? ` · ${newN} nouveau${newN > 1 ? 'x' : ''} cette semaine` : '');
@@ -554,18 +570,38 @@
   // ---- votes & masquage (navigateur)
   const SNAPSHOT = ['title', 'original_title', 'year', 'rating', 'votes', 'duration_min', 'genres', 'format', 'directors',
                     'country', 'continent', 'sc_url', 'seasons'];
+  const snapshotOf = (id) => {
+    const x = state.films.find(f => f.id === id) || {}, entry = {};
+    SNAPSHOT.forEach(k => { if (x[k] !== undefined) entry[k] = x[k]; });
+    return entry;
+  };
+  const touched = () => { user.changes = (user.changes || 0) + 1; saveUser(); updateBackupHint(); };
   function rate(id, vote) {
     if (vote) {
-      const x = state.films.find(f => f.id === id) || {};
-      const entry = user.ratings[id] || {};
-      SNAPSHOT.forEach(k => { if (x[k] !== undefined) entry[k] = x[k]; });
-      Object.assign(entry, { vote, universe, at: new Date().toISOString() });
-      user.ratings[id] = entry;
-      user.hidden[id] = 'seen'; // un titre noté est un titre vu
+      user.ratings[id] = { ...(user.ratings[id] || {}), ...snapshotOf(id), vote, universe, at: new Date().toISOString() };
+      user.hidden[id] = 'seen'; // un titre noté est un titre vu…
+      delete user.watch[id];    // …donc il sort de la liste à voir
     } else delete user.ratings[id];
-    saveUser(); buildReco(); render();
+    touched(); buildReco(); render();
   }
-  function hide(id, st) { if (st) user.hidden[id] = st; else delete user.hidden[id]; saveUser(); render(); }
+  function hide(id, st) {
+    if (st) { user.hidden[id] = st; delete user.watch[id]; } else delete user.hidden[id];
+    touched(); render();
+  }
+  function toggleWatch(id) {
+    if (user.watch[id]) delete user.watch[id];
+    else user.watch[id] = { ...snapshotOf(id), universe, at: new Date().toISOString() };
+    touched(); render();
+  }
+  // rappel de sauvegarde : beaucoup de modifications sans export récent → point rouge sur ⚙ + texte dans la fenêtre
+  function updateBackupHint() {
+    const n = user.changes || 0, last = user.lastExport ? new Date(user.lastExport) : null;
+    const days = last ? Math.floor((Date.now() - last) / 86400000) : null;
+    $('settings').classList.toggle('dot', n >= 15);
+    $('backupInfo').innerHTML = (last ? `Dernier export : il y a ${days} jour${days > 1 ? 's' : ''}` : 'Aucun export pour l’instant')
+      + (n ? ` · <b>${n} modification${n > 1 ? 's' : ''}</b> non sauvegardée${n > 1 ? 's' : ''} depuis` : ' · tout est sauvegardé')
+      + (Object.keys(user.watch).length + Object.keys(user.ratings).length >= 10 && n >= 15 ? ' — pense à exporter.' : '.');
+  }
 
   // ---- réglages
   function openSettings(first) {
@@ -573,7 +609,7 @@
     plist.innerHTML = ((state.manifest || {}).providers || []).map(p =>
       `<label title="${esc(p.name)}"><input type="checkbox" value="${p.id}" ${user.platforms.includes(p.id) ? 'checked' : ''} aria-label="${esc(p.name)}"> ${p.logo ? `<span class="lg"><img src="img/${p.logo}" alt="${esc(p.name)}"></span>` : esc(p.name)}</label>`).join('');
     $('saveSettings').textContent = first ? 'C\'est parti' : 'Enregistrer';
-    $('dataTools').hidden = !!first;
+    $('dataTools').hidden = !!first; updateBackupHint();
     $('overlay').hidden = false;
   }
   $('settings').addEventListener('click', () => openSettings(false));
@@ -588,21 +624,22 @@
     const blob = new Blob([JSON.stringify({ app: 'zazzulist', exported_at: new Date().toISOString(), ...user }, null, 1)], { type: 'application/json' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
     a.download = `zazzulist-${new Date().toISOString().slice(0, 10)}.json`; a.click(); URL.revokeObjectURL(a.href);
+    user.lastExport = new Date().toISOString(); user.changes = 0; saveUser(); updateBackupHint();
   });
   $('importFile').addEventListener('change', async e => {
     const file = e.target.files[0]; if (!file) return;
     try {
       const d = JSON.parse(await file.text());
-      if (!d || typeof d !== 'object' || (!d.ratings && !d.hidden)) throw new Error('format inattendu');
-      Object.assign(user.ratings, d.ratings || {}); Object.assign(user.hidden, d.hidden || {});
+      if (!d || typeof d !== 'object' || (!d.ratings && !d.hidden && !d.watch)) throw new Error('format inattendu');
+      Object.assign(user.ratings, d.ratings || {}); Object.assign(user.hidden, d.hidden || {}); Object.assign(user.watch, d.watch || {});
       if (Array.isArray(d.platforms) && d.platforms.length) user.platforms = d.platforms;
       saveUser(); $('overlay').hidden = true; load();
-      alert(`Import réussi : ${Object.keys(d.ratings || {}).length} votes, ${Object.keys(d.hidden || {}).length} titres vus/passés.`);
+      alert(`Import réussi : ${Object.keys(d.watch || {}).length} à voir, ${Object.keys(d.ratings || {}).length} votes, ${Object.keys(d.hidden || {}).length} titres vus/passés.`);
     } catch (err) { alert('Fichier illisible : ' + err.message); }
     e.target.value = '';
   });
   $('wipeBtn').addEventListener('click', () => {
-    if (!confirm('Effacer tous tes votes, titres vus et réglages de ce navigateur ?')) return;
+    if (!confirm('Effacer ta liste à voir, tes votes, titres vus et réglages de ce navigateur ? (pense à exporter avant)')) return;
     try { Object.keys(localStorage).filter(k => k.startsWith('zazzulist') || k === 'universe').forEach(k => localStorage.removeItem(k)); } catch {}
     location.reload();
   });
@@ -673,7 +710,8 @@
   $('grid').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     const id = +b.closest('.card').dataset.id;
-    if (b.dataset.vote) rate(id, voteOf(id) === b.dataset.vote ? null : b.dataset.vote);
+    if (b.dataset.watch) toggleWatch(id);
+    else if (b.dataset.vote) rate(id, voteOf(id) === b.dataset.vote ? null : b.dataset.vote);
     else if (b.dataset.act) hide(id, b.dataset.act === 'unhide' ? null : b.dataset.act);
   });
   $('universe').addEventListener('click', e => {
@@ -686,7 +724,7 @@
   (async () => {
     try { state.manifest = await (await fetch(DATA + 'manifest.json', { cache: 'no-cache' })).json(); }
     catch { setStatus('Catalogue indisponible', true); return; }
-    renderFilterUI(); load();
+    renderFilterUI(); updateBackupHint(); load();
   })();
 })();
 </script>
