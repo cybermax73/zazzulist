@@ -19,6 +19,8 @@
 - Partage : choix de l'option « site statique gratuit + données dans le navigateur » (vs fichier à télécharger, vs site
   avec comptes). Mise en ligne le soir même ; `gh` installé et authentifié sur le poste de Max.
 - Ajout des logos et de 4 plateformes (Apple TV+, MAX, Paramount+, Arte) ; import des votes de Max réussi.
+- Retours mobile de Max (Xiaomi) : filtres trop encombrants → panneau glissant depuis le bas ; logos qui débordent dans la
+  fenêtre plateformes → logos seuls ; curseur de note difficile → pouce 26 px, zone 44 px, `touch-action:none`, boutons − / +.
 
 ## Backlog d'idées (brainstorm du 19/09, non priorisé, rien d'engagé)
 - Pioche : 3 titres au hasard dans la sélection, plein écran, « re-tirer ».

@@ -39,7 +39,7 @@ Vérifier : `curl -s https://cybermax73.github.io/zazzulist/data/manifest.json`.
 ## Tester
 1. `cd docs && python -m http.server 8080` (Ctrl+C pour arrêter ; sous Git Bash, `taskkill //F //IM python.exe`).
 2. Écrire un fichier de lignes JS (une expression par ligne, `sleep N` pour attendre) et lancer
-   `APP_PORT=8080 python tools/cdp_test.py mon_test.js` : chaque ligne est évaluée dans la page, le résultat s'affiche.
+   `APP_PORT=8080 python tools/cdp_test.py mon_test.js` (`APP_MOBILE=1` pour émuler un téléphone 400 px tactile) : chaque ligne est évaluée dans la page, le résultat s'affiche.
    Exemples utiles : `document.getElementById('count').textContent`, `localStorage.clear(); location.reload(); 'ok'`,
    `document.querySelector('#formats .chip[data-fmt="animation"]').click(); 'x'`.
 3. Capture d'écran : `msedge --headless=new --screenshot=<chemin> --window-size=1400,700 http://127.0.0.1:8080/`.

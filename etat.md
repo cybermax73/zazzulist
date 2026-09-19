@@ -1,6 +1,6 @@
 # ZazzuList — État (compact, source de vérité)
 
-> Dernière mise à jour : **19/09/2026 (soir)**. Lire `CLAUDE.md` d'abord.
+> Dernière mise à jour : **19/09/2026 (nuit)** — version mobile : filtres dans un panneau glissant. Lire `CLAUDE.md` d'abord.
 
 ## En prod
 - **https://cybermax73.github.io/zazzulist/** — dépôt public `cybermax73/zazzulist`, Pages = branche `main`, dossier `/docs`.
@@ -21,6 +21,9 @@
 - Cartes : affiche, note SC colorée, votes, durée/saisons, genres, réalisateur/créateur, pays, synopsis dépliable,
   **logos plateformes cliquables** (lien direct), 👍/👎, ✓ vu / ✕ passer. Badges : NOUVEAU (arrivé < 7 j),
   Nouvelle saison / Nouvelle série (< 90 j), « S4 le 15 oct. » (à venir < 60 j).
+- **Mobile (≤ 720 px)** : les filtres vivent dans un panneau qui glisse depuis le bas (bouton « Filtres » + badge du nombre
+  de filtres actifs, bouton « Voir N films » pour fermer) ; le sélecteur de plateforme y est déplacé ; curseur de note
+  agrandi + boutons − / + ; fenêtre plateformes = logos seuls.
 - ⚙ : choix des plateformes (première visite = fenêtre obligatoire), export / import JSON, tout effacer.
 - Code présent mais **masqué** (Max a voulu épurer) : tri « Pour toi » (affinité 👍/👎, `recoScore()`), tris popularité /
   année / nouveautés / aléatoire, sélecteur de votes min, case « nouvelle saison ».

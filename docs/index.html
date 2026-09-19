@@ -56,7 +56,10 @@
   .group select, .group input[type=number] { padding: 3px 6px; border-radius: 6px; border: 1px solid var(--line);
                                              background: var(--bg); color: var(--text); }
   .group input[type=number] { width: 66px; text-align: center; }
-  .group input[type=range] { width: 110px; accent-color: var(--accent); }
+  .group input[type=range] { width: 110px; accent-color: var(--accent); touch-action: none; }
+  .stepper { display: inline-flex; align-items: center; gap: 4px; }
+  .stepper button { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg);
+                    cursor: pointer; font-size: 16px; line-height: 1; padding: 0; }
   .group b { color: var(--text); font-variant-numeric: tabular-nums; min-width: 2.2em; }
   .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
   .seg button { padding: 4px 10px; border: 0; background: transparent; cursor: pointer; color: var(--muted); }
@@ -104,7 +107,7 @@
   .plat img { height: 26px; width: auto; display: block; }
   .plat.txt { padding: 4px 10px; font-weight: 650; font-size: 12.5px; color: #fff; background: #555; }
   .plat:hover { filter: brightness(1.08); box-shadow: 0 0 0 2px var(--line); }
-  .plist img { height: 22px; width: auto; border-radius: 4px; }
+  .plist img { height: 30px; width: auto; border-radius: 4px; max-width: 100%; }
   .votes { display: inline-flex; gap: 4px; }
   .votes button { border: 1px solid var(--line); background: transparent; border-radius: 6px; padding: 2px 8px;
                   cursor: pointer; font-size: 14px; line-height: 1.3; opacity: .55; }
@@ -138,14 +141,56 @@
   .modal h2 { margin: 0 0 6px; font-size: 18px; }
   .modal p { margin: 0 0 14px; color: var(--muted); font-size: 13px; }
   .plist { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
-  .plist label { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border: 1px solid var(--line);
-                 border-radius: 10px; cursor: pointer; }
+  .plist label { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border: 1px solid var(--line);
+                 border-radius: 10px; cursor: pointer; min-width: 0; }
   .plist label:has(input:checked) { border-color: var(--text); background: var(--chip); }
   .plist input { accent-color: var(--accent); width: 16px; height: 16px; }
   .modal .actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
   .modal .sub { border-top: 1px solid var(--line); margin-top: 16px; padding-top: 12px; font-size: 12.5px; color: var(--muted); }
   .modal .sub .actions { justify-content: flex-start; margin-top: 8px; }
-  @media (max-width: 480px) { .grid { grid-template-columns: 1fr; } main, header { padding-left: 14px; padding-right: 14px; } }
+  /* ---- mobile : filtres dans un panneau qui glisse depuis le bas */
+  #filtersBtn { display: none; }
+  .sheet-head, .sheet-foot { display: none; }
+  @media (max-width: 720px) {
+    main, header { padding-left: 14px; padding-right: 14px; }
+    .grid { grid-template-columns: 1fr; }
+    .status { display: none; }
+    .grow { flex: 1 1 120px; order: 10; }
+    input[type=search] { max-width: none; }
+    #filtersBtn { display: inline-flex; align-items: center; gap: 6px; order: 11; }
+    #settings { order: 12; }
+    #universe { margin-left: auto; }
+    #filtersBtn .badge { background: var(--accent); color: #fff; border-radius: 999px; font-size: 11px; font-weight: 700;
+                         min-width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; padding: 0 5px; }
+    #filtersBtn .badge:empty { display: none; }
+    .rows { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; margin: 0; padding: 0 16px 14px;
+            max-height: 88vh; overflow-y: auto; -webkit-overflow-scrolling: touch; background: var(--panel);
+            border-radius: 18px 18px 0 0; box-shadow: 0 -8px 30px rgba(0,0,0,.25); gap: 12px;
+            transform: translateY(105%); transition: transform .25s ease; padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
+    .rows.open { transform: none; }
+    .sheet-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 39; }
+    .sheet-head { display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0;
+                  background: var(--panel); padding: 14px 0 8px; font-weight: 700; font-size: 16px; }
+    .sheet-head button { border: 0; background: none; font-size: 22px; line-height: 1; cursor: pointer; color: var(--muted); }
+    .sheet-foot { display: block; position: sticky; bottom: 0; background: var(--panel); padding-top: 10px; }
+    .sheet-foot .btn { width: 100%; padding: 12px; font-size: 15px; }
+    .row { gap: 8px 14px; }
+    .group { gap: 8px; }
+    .group > .gl { width: 100%; margin: 4px 0 0; }
+    .chip { padding: 6px 12px; font-size: 13.5px; }
+    .seg button { padding: 8px 12px; }
+    .group input[type=range] { width: 150px; height: 44px; }
+    .group select, .group input[type=number] { padding: 8px; font-size: 15px; }
+    .hint.edge { margin-left: 0; }
+  }
+  /* curseur : pouce large et facile à attraper (tactile) */
+  input[type=range] { -webkit-appearance: none; appearance: none; background: transparent; height: 32px; cursor: pointer; }
+  input[type=range]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: var(--line); }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 26px; height: 26px; margin-top: -10px;
+    border-radius: 50%; background: var(--accent); border: 3px solid var(--panel); box-shadow: 0 1px 4px rgba(0,0,0,.3); }
+  input[type=range]::-moz-range-track { height: 6px; border-radius: 3px; background: var(--line); }
+  input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: var(--accent);
+    border: 3px solid var(--panel); box-shadow: 0 1px 4px rgba(0,0,0,.3); }
 </style>
 </head>
 <body>
@@ -157,15 +202,20 @@
     <div class="grow"><input id="q" type="search" placeholder="Titre, réalisateur…" autocomplete="off"></div>
     <span id="status" class="status"></span>
     <button id="settings" class="btn icon" title="Mes plateformes et mes données">⚙</button>
+    <button id="filtersBtn" class="btn">Filtres <span class="badge" id="filtersBadge"></span></button>
   </div>
 
-  <div class="rows">
+  <div class="rows" id="rows">
+    <div class="sheet-head"><span>Filtres</span><button id="sheetClose" aria-label="Fermer">✕</button></div>
+    <div class="row" id="platformRow" hidden><div class="group"><span class="gl">Plateforme</span></div></div>
     <div class="row"><div class="group" id="formats"><span class="gl">Format</span></div></div>
     <div class="row"><div class="group" id="themes"><span class="gl">Thèmes</span></div></div>
     <div class="row"><div class="group" id="origins"><span class="gl">Origine</span></div></div>
     <div class="row">
       <div class="group"><span class="gl">Critères</span>
-        <label>Note ≥ <input id="minRating" type="range" min="5" max="9" step="0.1" value="6"><b id="minRatingV">6.0</b></label>
+        <label>Note ≥ <span class="stepper"><button type="button" data-step="-1" aria-label="Moins">−</button>
+          <input id="minRating" type="range" min="5" max="9" step="0.1" value="6">
+          <button type="button" data-step="1" aria-label="Plus">+</button></span><b id="minRatingV">6.0</b></label>
         <label>Après <input id="yearMin" type="number" min="1890" max="2030" placeholder="année"></label>
         <label><span id="durLabel">Pas plus de</span> <select id="durMax"></select></label>
       </div>
@@ -183,8 +233,10 @@
       </div>
       <span class="hint edge" title="S'applique aux puces Format, Thèmes et Origine">1 clic : inclure · 2 : exclure · 3 : neutre</span>
     </div>
+    <div class="sheet-foot"><button class="btn primary" id="sheetApply">Voir les résultats</button></div>
   </div>
 </header>
+<div class="sheet-backdrop" id="sheetBackdrop" hidden></div>
 
 <main>
   <p class="count" id="count"></p>
@@ -407,7 +459,7 @@
     </article>`;
   }
 
-  function render() {
+  let render = function () {
     const list = filtered();
     $('grid').innerHTML = list.length ? list.map(card).join('') : `<p class="empty">Aucun${universe === 'series' ? 'e série' : ' film'} ne correspond à ces filtres.</p>`;
     const hiddenN = Object.keys(user.hidden).length;
@@ -418,7 +470,7 @@
       + (hiddenN ? ` · ${hiddenN} vu${hiddenN > 1 ? 's' : ''}/passé${hiddenN > 1 ? 's' : ''}` : '')
       + (likes + dislikes ? ` · ${likes} 👍 ${dislikes} 👎` : '')
       + (newN ? ` · ${newN} nouveau${newN > 1 ? 'x' : ''} cette semaine` : '');
-  }
+  };
 
   function renderChips() {
     const f = state.f;
@@ -438,8 +490,8 @@
 
   function renderPlatformSeg() {
     const seg = $('platform');
-    if (user.platforms.length < 2) { seg.hidden = true; return; }
-    seg.hidden = false;
+    if (user.platforms.length < 2) { seg.hidden = true; $('platformRow').hidden = true; return; }
+    seg.hidden = false; placePlatform();
     if (!['all', ...user.platforms.map(String)].includes(String(state.f.platform))) state.f.platform = 'all';
     seg.innerHTML = `<button data-v="all" class="${state.f.platform === 'all' ? 'on' : ''}">Toutes</button>`
       + user.platforms.map(id => `<button data-v="${id}" class="${String(state.f.platform) === String(id) ? 'on' : ''}">${esc(providerName(id))}</button>`).join('');
@@ -516,7 +568,7 @@
   function openSettings(first) {
     const plist = $('plist');
     plist.innerHTML = ((state.manifest || {}).providers || []).map(p =>
-      `<label><input type="checkbox" value="${p.id}" ${user.platforms.includes(p.id) ? 'checked' : ''}> ${p.logo ? `<img src="img/${p.logo}" alt="">` : ''} ${esc(p.name)}</label>`).join('');
+      `<label title="${esc(p.name)}"><input type="checkbox" value="${p.id}" ${user.platforms.includes(p.id) ? 'checked' : ''} aria-label="${esc(p.name)}"> ${p.logo ? `<img src="img/${p.logo}" alt="${esc(p.name)}">` : esc(p.name)}</label>`).join('');
     $('saveSettings').textContent = first ? 'C\'est parti' : 'Enregistrer';
     $('dataTools').hidden = !!first;
     $('overlay').hidden = false;
@@ -552,8 +604,48 @@
     location.reload();
   });
 
+  // ---- mobile : panneau de filtres + emplacement du sélecteur de plateforme
+  const mobile = window.matchMedia('(max-width: 720px)');
+  function placePlatform() {
+    const seg = $('platform'), row = $('platformRow');
+    if (mobile.matches) { row.querySelector('.group').appendChild(seg); row.hidden = seg.hidden; }
+    else { $('universe').after(seg); row.hidden = true; }
+  }
+  function openSheet(open) {
+    $('rows').classList.toggle('open', open); $('sheetBackdrop').hidden = !open;
+    document.body.style.overflow = open && mobile.matches ? 'hidden' : '';
+  }
+  function activeFilterCount() {
+    const f = state.f, d = freshDefaults();
+    let n = 0;
+    if (f.platform !== 'all') n++;
+    if (f.minRating !== d.minRating) n++;
+    if (f.yearMin) n++;
+    if (f.durMax) n++;
+    if (f.view !== 'all') n++;
+    n += f.inc.length + f.exc.length + f.origInc.length + f.origExc.length + f.fmtInc.length;
+    n += f.fmtExc.filter(x => !d.fmtExc.includes(x)).length + d.fmtExc.filter(x => !f.fmtExc.includes(x)).length;
+    return n;
+  }
+  function updateFiltersBtn() {
+    $('filtersBadge').textContent = activeFilterCount() || '';
+    const n = filtered().length;
+    $('sheetApply').textContent = `Voir ${n} ${U().one}${n > 1 ? 's' : ''}`;
+  }
+  $('filtersBtn').addEventListener('click', () => openSheet(true));
+  $('sheetClose').addEventListener('click', () => openSheet(false));
+  $('sheetApply').addEventListener('click', () => openSheet(false));
+  $('sheetBackdrop').addEventListener('click', () => openSheet(false));
+  mobile.addEventListener('change', () => { placePlatform(); openSheet(false); });
+  document.querySelectorAll('.stepper [data-step]').forEach(b => b.addEventListener('click', () => {
+    const r = $('minRating'), v = Math.min(9, Math.max(5, Math.round((+r.value + 0.1 * +b.dataset.step) * 10) / 10));
+    r.value = v; r.dispatchEvent(new Event('input'));
+  }));
+
   // ---- événements filtres
   const upd = (k, v) => { state.f[k] = v; saveFilters(); render(); };
+  const _render = render;
+  render = function () { _render(); updateFiltersBtn(); };
   $('q').addEventListener('input', e => upd('q', e.target.value));
   $('minRating').addEventListener('input', e => { $('minRatingV').textContent = Number(e.target.value).toFixed(1); upd('minRating', +e.target.value); });
   $('yearMin').addEventListener('input', e => upd('yearMin', e.target.value));

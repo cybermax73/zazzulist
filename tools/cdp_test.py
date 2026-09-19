@@ -1,6 +1,6 @@
 """Mini client Chrome DevTools Protocol (stdlib only) pour piloter la page dans Edge headless.
 
-Usage : APP_PORT=8080 python tools/cdp_test.py test.js
+Usage : APP_PORT=8080 [APP_MOBILE=1] python tools/cdp_test.py test.js
   test.js = une expression JavaScript par ligne (évaluée dans la page, résultat affiché),
   `sleep N` pour attendre N secondes, `#` pour un commentaire.
 Prérequis : la page servie sur http://127.0.0.1:$APP_PORT/ (cd docs && python -m http.server 8080).
@@ -61,6 +61,9 @@ def js(expr):
     return r["result"].get("value")
 
 call("Page.enable"); call("Runtime.enable")
+if os.environ.get("APP_MOBILE"):  # émulation téléphone : APP_MOBILE=1 (largeur 400 px, tactile)
+    call("Emulation.setDeviceMetricsOverride", {"width": 400, "height": 800, "deviceScaleFactor": 2, "mobile": True})
+    call("Emulation.setTouchEmulationEnabled", {"enabled": True})
 call("Page.navigate", {"url": "http://127.0.0.1:" + os.environ.get("APP_PORT","8765") + "/"})
 time.sleep(3)
 for line in open(sys.argv[1], encoding="utf-8"):
