@@ -30,6 +30,10 @@
 
 - Fix ⚙ muet (helper `ago` manquant après l'ajout de la synchro) — leçon : capturer les erreurs JS dans les tests.
 
+### 20/09/2026 — épuration
+- Retrait des boutons ✓ vu / ✕ passer sur les cartes et des vues « 👎 Pas aimé » / « Vus / passés » (demande Max).
+  Données `hidden` conservées (synchro, import) ; la vue « Non vus » masque toujours les titres notés.
+
 ## Backlog d'idées (brainstorm du 19/09, non priorisé, rien d'engagé)
 - Pioche : 3 titres au hasard dans la sélection, plein écran, « re-tirer ».
 - Départs imminents (« quitte Netflix le 30/09 ») — dépend de `vodPlatforms.modalities.dateEnd`, à vérifier.

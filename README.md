@@ -3,7 +3,7 @@
 Les films et séries **bien notés sur SensCritique** (≥ 6/10) qui sont **disponibles ce soir** sur tes plateformes
 (Netflix, Canal+, Prime Video, Disney+, Apple TV+, MAX, Paramount+, Arte), avec lien direct vers la plateforme.
 
-Site statique : aucune inscription, aucun serveur. Tes 👍/👎, titres vus et plateformes restent dans ton navigateur
+Site statique : aucune inscription, aucun serveur. Tes 👍/👎, ta liste à voir et tes plateformes restent dans ton navigateur
 (exportables / importables via ⚙ pour passer d'un appareil à l'autre).
 
 ## Comment ça marche

@@ -252,7 +252,7 @@
           </select></label>
         <label><select id="view">
             <option value="all">Tout</option><option value="watch">🔖 Ma liste à voir</option><option value="todo">Non vus (masquer vus)</option>
-            <option value="like">👍 J'ai aimé</option><option value="dislike">👎 Pas aimé</option><option value="hidden">Vus / passés</option>
+            <option value="like">👍 J'ai aimé</option>
           </select></label>
         <button class="reset" id="resetAll">réinitialiser</button>
       </div>
@@ -275,7 +275,7 @@
     <div class="plist" id="plist"></div>
     <div class="actions"><button class="btn primary" id="saveSettings">C'est parti</button></div>
     <div class="sub" id="dataTools">
-      Ta liste à voir, tes 👍/👎 et titres vus sont enregistrés dans ce navigateur uniquement. Pour les retrouver sur un autre appareil :
+      Ta liste à voir et tes 👍/👎 sont enregistrés dans ce navigateur uniquement. Pour les retrouver sur un autre appareil :
       <b>Exporter</b> enregistre un fichier <code>zazzulist-…json</code> dans tes Téléchargements ; <b>Importer</b> te demande
       de choisir ce fichier.
       <div class="actions">
@@ -476,6 +476,7 @@ Pour retrouver ma liste sur un autre appareil : ${location.origin}${location.pat
   function loadFilters() {
     state.f = freshDefaults();
     try { Object.assign(state.f, JSON.parse(localStorage.getItem(filtersKey()) || '{}')); } catch {}
+    if (!['all', 'watch', 'todo', 'like'].includes(state.f.view)) state.f.view = 'all'; // modes retirés (👎, vus/passés)
   }
   const saveFilters = () => { try { localStorage.setItem(filtersKey(), JSON.stringify(state.f)); } catch {} };
   loadFilters();
@@ -573,7 +574,7 @@ Pour retrouver ma liste sur un autre appareil : ${location.origin}${location.pat
 
   // ---- rendu
   function card(x) {
-    const h = user.hidden[x.id], v = voteOf(x.id);
+    const v = voteOf(x.id);
     const plats = x.platforms.map(p => {
       const logo = providerLogo(p.id), name = esc(providerName(p.id));
       const inner = logo ? `<img src="img/${logo}" alt="${name}" title="Voir sur ${name}">` : `▶ ${name}`;
@@ -586,9 +587,7 @@ Pour retrouver ma liste sur un autre appareil : ${location.origin}${location.pat
       : fmtDur(x.duration_min);
     const meta = [dur, x.genres.slice(0, 3).join(' · '), x.directors.slice(0, 2).join(', '), x.country].filter(Boolean)
       .map(esc).join('<span>·</span> ');
-    const tools = h
-      ? `<button class="tag">${h === 'seen' ? 'vu' : 'passé'}</button><button data-act="unhide">↩ réafficher</button>`
-      : `<button data-act="seen" title="Déjà vu">✓ vu</button><button data-act="skip" title="Pas intéressé">✕ passer</button>`;
+    // boutons ✓ vu / ✕ passer retirés (Max, 20/09) ; pour les remettre : rétablir `tools` et `<div class="tools">` ci-dessous
     let seasonBadge = '';
     if (universe === 'series' && x.last_season_date) {
       const d = daysSince(x.last_season_date);
@@ -600,7 +599,7 @@ Pour retrouver ma liste sur un autre appareil : ${location.origin}${location.pat
     const isNew = x.first_seen && daysSince(x.first_seen) <= NEW_DAYS;
     const why = state.f.sort === 'foryou' && x._reco && x._reco.why.length
       ? `<div class="why"><b>pour toi</b> · ${x._reco.why.map(esc).join(' · ')}</div>` : '';
-    return `<article class="card${h ? ' hidden-film' : ''}" data-id="${x.id}">
+    return `<article class="card" data-id="${x.id}">
       ${isNew ? '<span class="new" title="Arrivé au catalogue cette semaine">NOUVEAU</span>' : ''}
       <img class="poster" loading="lazy" src="${esc(x.poster || '')}" alt="">
       <div class="body">
@@ -620,21 +619,18 @@ Pour retrouver ma liste sur un autre appareil : ${location.origin}${location.pat
           </div>
         </div>
       </div>
-      <div class="tools">${tools}</div>
     </article>`;
   }
 
   let render = function () {
     const list = filtered();
     $('grid').innerHTML = list.length ? list.map(card).join('') : `<p class="empty">Aucun${universe === 'series' ? 'e série' : ' film'} ne correspond à ces filtres.</p>`;
-    const hiddenN = Object.keys(user.hidden).length;
     const watchN = Object.keys(user.watch).length;
     const likes = Object.values(user.ratings).filter(r => r.vote === 'like').length;
     const dislikes = Object.values(user.ratings).filter(r => r.vote === 'dislike').length;
     const newN = state.films.filter(x => x.first_seen && daysSince(x.first_seen) <= NEW_DAYS).length;
     $('count').textContent = `${list.length} ${U().one}${list.length > 1 ? 's' : ''} sur ${state.films.length}`
       + (watchN ? ` · ${watchN} à voir` : '')
-      + (hiddenN ? ` · ${hiddenN} vu${hiddenN > 1 ? 's' : ''}/passé${hiddenN > 1 ? 's' : ''}` : '')
       + (likes + dislikes ? ` · ${likes} 👍 ${dislikes} 👎` : '')
       + (newN ? ` · ${newN} nouveau${newN > 1 ? 'x' : ''} cette semaine` : '');
   };
@@ -787,7 +783,7 @@ Pour retrouver ma liste sur un autre appareil : ${location.origin}${location.pat
       COLLS.forEach(coll => Object.keys(d[coll] || {}).forEach(id => { user.stamps[coll + ':' + id] = now; delete user.tomb[coll + ':' + id]; }));
       if (Array.isArray(d.platforms) && d.platforms.length) { user.platforms = d.platforms; user.platformsAt = now; }
       saveUser(); $('overlay').hidden = true; load();
-      alert(`Import réussi : ${Object.keys(d.watch || {}).length} à voir, ${Object.keys(d.ratings || {}).length} votes, ${Object.keys(d.hidden || {}).length} titres vus/passés.`);
+      alert(`Import réussi : ${Object.keys(d.watch || {}).length} à voir, ${Object.keys(d.ratings || {}).length} votes.`);
     } catch (err) { alert('Fichier illisible : ' + err.message); }
     e.target.value = '';
   });

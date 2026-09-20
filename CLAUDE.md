@@ -5,7 +5,7 @@
 
 ## Ce que c'est
 Site statique **https://cybermax73.github.io/zazzulist/** : films et séries notés ≥ 6 sur SensCritique, disponibles
-sur les plateformes de streaming choisies par l'utilisateur (8 possibles), avec lien direct, filtres, 👍/👎, vu/passer.
+sur les plateformes de streaming choisies par l'utilisateur (8 possibles), avec lien direct, filtres, 👍/👎, liste à voir.
 Propriétaire : Max (GitHub `cybermax73`). Public cible : Max + amis, partage par simple lien. **Zéro coût, zéro serveur.**
 
 ## Où sont les choses
@@ -22,7 +22,7 @@ Propriétaire : Max (GitHub `cybermax73`). Public cible : Max + amis, partage pa
   ce sont des sauvegardes ; la version de référence est ce dépôt.
 
 ## Règles
-- Données utilisateur (plateformes, votes, vus) = **localStorage du navigateur uniquement** (`zazzulist_user_v1`,
+- Données utilisateur (plateformes, votes, liste à voir, `hidden` hérité) = **localStorage du navigateur uniquement** (`zazzulist_user_v1`,
   `zazzulist_filters_v1_<univers>`, `universe`). Pas de compte, pas de backend. Export/import JSON via ⚙.
   Si le schéma change, incrémenter la clé (`_v2`) plutôt que de casser les données existantes.
 - Le dépôt est **public** : jamais de donnée personnelle, de clé, d'email dedans.

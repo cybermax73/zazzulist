@@ -1,6 +1,6 @@
 # ZazzuList — État (compact, source de vérité)
 
-> Dernière mise à jour : **19/09/2026 (nuit)** — version mobile : filtres dans un panneau glissant. Lire `CLAUDE.md` d'abord.
+> Dernière mise à jour : **20/09/2026** — épuration : plus de ✓ vu / ✕ passer ni de vues « 👎 Pas aimé » et « Vus / passés ». Lire `CLAUDE.md` d'abord.
 
 ## En prod
 - **https://cybermax73.github.io/zazzulist/** — dépôt public `cybermax73/zazzulist`, Pages = branche `main`, dossier `/docs`.
@@ -17,9 +17,9 @@
   séries = Animation, Documentaires, Émissions & télé-réalité. Docs/spectacles/émissions/courts **exclus par défaut**.
 - **Thèmes** (12, tri-état, mapping `THEMES`), **Origine** (6 continents, premier pays de production, table `CONTINENTS`
   dans le script), **Critères** : note ≥ (défaut 6,0), après <année>, durée max (séries : par épisode), vue
-  (Tout / À voir / 👍 / 👎 / vus). Seuil de 100 votes appliqué en coulisses (contrôle masqué).
+  (Tout / 🔖 À voir / Non vus / 👍). Seuil de 100 votes appliqué en coulisses (contrôle masqué).
 - Cartes : affiche, note SC colorée, votes, durée/saisons, genres, réalisateur/créateur, pays, synopsis dépliable,
-  **logos plateformes cliquables** (lien direct), 👍/👎, ✓ vu / ✕ passer. Badges : NOUVEAU (arrivé < 7 j),
+  **logos plateformes cliquables** (lien direct), 👍/👎. Badges : NOUVEAU (arrivé < 7 j),
   Nouvelle saison / Nouvelle série (< 90 j), « S4 le 15 oct. » (à venir < 60 j).
 - **Mobile (≤ 720 px)** : les filtres vivent dans un panneau qui glisse depuis le bas (bouton « Filtres » + badge du nombre
   de filtres actifs, bouton « Voir N films » pour fermer) ; le sélecteur de plateforme y est déplacé ; curseur de note
@@ -36,7 +36,9 @@
   depuis le dernier export (point rouge sur ⚙ à partir de 15, texte dans la fenêtre ⚙).
 - ⚙ : choix des plateformes (première visite = fenêtre obligatoire), export / import JSON, tout effacer.
 - Code présent mais **masqué** (Max a voulu épurer) : tri « Pour toi » (affinité 👍/👎, `recoScore()`), tris popularité /
-  année / nouveautés / aléatoire, sélecteur de votes min, case « nouvelle saison ».
+  année / nouveautés / aléatoire, sélecteur de votes min, case « nouvelle saison ». **Retiré le 20/09** : boutons ✓ vu / ✕ passer
+  et vues « 👎 Pas aimé » / « Vus / passés » (CSS `.tools` et fonction `hide()` conservés ; `user.hidden` reste alimenté par
+  les votes → la vue « Non vus » masque les titres notés ; un ancien mode mémorisé retombe sur « Tout »).
 
 ## Décisions produit (Max)
 - Une seule source : SensCritique (notes fiables, dispo JustWatch incluse). Pas de complément JustWatch pour l'instant.
